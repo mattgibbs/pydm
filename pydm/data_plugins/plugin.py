@@ -11,8 +11,8 @@ class PyDMConnection(QObject):
     unit_signal =             pyqtSignal(str)
     prec_signal =             pyqtSignal(int)
 
-    upper_limit_signal =      pyqtSignal(int)
-    lower_limit_signal =      pyqtSignal(int)
+    upper_disp_limit_signal =      pyqtSignal(int)
+    lower_disp_limit_signal =      pyqtSignal(int)
 
     def __init__(self, channel, address, parent=None):
         super(PyDMConnection, self).__init__(parent)
@@ -54,10 +54,10 @@ class PyDMConnection(QObject):
         if channel.prec_slot is not None:
             self.prec_signal.connect(channel.prec_slot, Qt.QueuedConnection)
 
-        if channel.lower_limit_slot is not None:
-            self.lower_limit_signal.connect(channel.lower_limit_slot, Qt.QueuedConnection)
-        if channel.upper_limit_slot is not None:
-            self.upper_limit_signal.connect(channel.upper_limit_slot, Qt.QueuedConnection)
+        if channel.lower_disp_limit_slot is not None:
+            self.lower_disp_limit_signal.connect(channel.lower_disp_limit_slot, Qt.QueuedConnection)
+        if channel.upper_disp_limit_slot is not None:
+            self.upper_disp_limit_signal.connect(channel.upper_disp_limit_slot, Qt.QueuedConnection)
 
     def remove_listener(self):
         self.listener_count = self.listener_count - 1

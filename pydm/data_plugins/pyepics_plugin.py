@@ -24,24 +24,20 @@ class Connection(PyDMConnection):
       if type(units) == bytes:
         units = units.decode()
       self.unit_signal.emit(units)
-    if count > 1:
-      self.new_waveform_signal.emit(value)
-    else:
-      #if value is not None:
-      if True:
+    if lower_disp_limit is not None:
+      self.lower_disp_limit_signal[int].emit(int(lower_disp_limit))
+    if upper_disp_limit is not None:
+      self.upper_disp_limit_signal[int].emit(int(upper_disp_limit))
+    if value is not None:
+      if count > 1:
+        self.new_waveform_signal.emit(value)
+      elif ftype is not None:
         if ftype in (epics.dbr.INT, epics.dbr.CTRL_INT, epics.dbr.TIME_INT, epics.dbr.ENUM, epics.dbr.CTRL_ENUM, epics.dbr.TIME_ENUM):
           self.new_value_signal[int].emit(int(value))
         elif ftype in (epics.dbr.CTRL_FLOAT, epics.dbr.FLOAT, epics.dbr.TIME_FLOAT, epics.dbr.CTRL_DOUBLE, epics.dbr.DOUBLE, epics.dbr.TIME_DOUBLE):
           self.new_value_signal[float].emit(float(value))
         else:
           self.new_value_signal[str].emit(char_value)
-      else:
-        print("{}".format(pvname))
-
-    if lower_disp_limit is not None:
-      self.lower_limit_signal[int].emit(int(lower_disp_limit))
-    if upper_disp_limit is not None:
-      self.upper_limit_signal[int].emit(int(upper_disp_limit))
 
 
   def send_connection_state(self, pvname=None, conn=None, *args, **kws):
