@@ -11,10 +11,13 @@ class PyDMConnection(QObject):
     unit_signal =             pyqtSignal(str)
     prec_signal =             pyqtSignal(int)
 
+    upper_limit_signal =      pyqtSignal(int)
+    lower_limit_signal =      pyqtSignal(int)
+
     def __init__(self, channel, address, parent=None):
         super(PyDMConnection, self).__init__(parent)
         self.listener_count = 0
-  
+
     def add_listener(self, channel):
         self.listener_count = self.listener_count + 1
         if channel.connection_slot is not None:
@@ -35,7 +38,7 @@ class PyDMConnection(QObject):
 
         if channel.waveform_slot is not None:
             self.new_waveform_signal.connect(channel.waveform_slot, Qt.QueuedConnection)
-    
+
         if channel.severity_slot is not None:
             self.new_severity_signal.connect(channel.severity_slot, Qt.QueuedConnection)
 
@@ -50,12 +53,17 @@ class PyDMConnection(QObject):
 
         if channel.prec_slot is not None:
             self.prec_signal.connect(channel.prec_slot, Qt.QueuedConnection)
-      
+
+        if channel.lower_limit_slot is not None:
+            self.lower_limit_signal.connect(channel.lower_limit_slot, Qt.QueuedConnection)
+        if channel.upper_limit_slot is not None:
+            self.upper_limit_signal.connect(channel.upper_limit_slot, Qt.QueuedConnection)
+
     def remove_listener(self):
         self.listener_count = self.listener_count - 1
         if self.listener_count < 1:
             self.close()
-  
+
     def close(self):
         pass
 
@@ -64,17 +72,17 @@ class PyDMPlugin(object):
     connection_class = PyDMConnection
     def __init__(self):
         self.connections = {}
-  
+
     def get_address(self, channel):
         return str(channel.address.split(self.protocol)[1])
-    
-    def add_connection(self, channel):  
+
+    def add_connection(self, channel):
         address = self.get_address(channel)
         if address in self.connections:
             self.connections[address].add_listener(channel)
         else:
             self.connections[address] = self.connection_class(channel, address)
-  
+
     def remove_connection(self, channel):
         address = self.get_address(channel)
         if address in self.connections:
