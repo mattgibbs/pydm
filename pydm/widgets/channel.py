@@ -24,14 +24,14 @@ class PyDMChannel:
     functionality to the :attr:`.value_slot` you have created a
     Widget that can do either interchangeably, all the user has to do is
     specify the correct address signature and the rest of the work is done by
-    the underlying plugins.  
-    
+    the underlying plugins.
+
     Parameters
     ----------
     address : str, optional
         The name of the address to be used by the plugin. This
         should usually be a user inputted field when a specific
-        PyDM widget is initialized 
+        PyDM widget is initialized
 
     connection_slot : pyqtSlot, optional
         A function to be run when the connection state
@@ -52,26 +52,27 @@ class PyDMChannel:
     enum_strings_slot : pyqtSlot, optional
         A function to be run when the enum_strings change
 
-    unit_slot : pyqtSlot, optional 
+    unit_slot : pyqtSlot, optional
         A function to be run when the unit changes
-    
+
     prec_slot : pyqtSlot, optional
         A function to be run when the precision value changes
 
-    value_signal : pyqtSignal, optional 
+    value_signal : pyqtSignal, optional
         Attach a signal here that emits a desired value to be sent through the
         plugin
 
     waveform_signal : pyqtSlot, optional
         Attach a signal here that emits a desired waveform
     """
-    def __init__(self, address=None, connection_slot=None, value_slot=None, 
-                 waveform_slot=None, severity_slot=None, write_access_slot=None, 
+    def __init__(self, address=None, connection_slot=None, value_slot=None,
+                 waveform_slot=None, severity_slot=None, write_access_slot=None,
                  enum_strings_slot=None, unit_slot=None, prec_slot=None,
+                 upper_disp_limit_slot=None, lower_disp_limit_slot=None,
                  value_signal=None, waveform_signal=None):
 
         self.address = address
-        
+
         self.connection_slot   = connection_slot
         self.value_slot        = value_slot
         self.severity_slot     = severity_slot
@@ -80,6 +81,9 @@ class PyDMChannel:
         self.enum_strings_slot = enum_strings_slot
         self.unit_slot         = unit_slot
         self.prec_slot         = prec_slot
-        
+
+        self.upper_disp_limit_slot  = upper_disp_limit_slot
+        self.lower_disp_limit_slot  = lower_disp_limit_slot
+
         self.value_signal    = value_signal
         self.waveform_signal = waveform_signal

@@ -8,8 +8,11 @@ class Connection(PyDMConnection):
     super(Connection, self).__init__(channel, pv, parent)
     self.pv = epics.PV(pv, callback=self.send_new_value, connection_callback=self.send_connection_state, form='ctrl', auto_monitor=True)
     self.add_listener(channel)
-  
-  def send_new_value(self, pvname=None, value=None, char_value=None, units=None, enum_strs=None, severity=None, count=None, write_access=None, ftype=None, *args, **kws):
+
+  def send_new_value(self, pvname=None, value=None, char_value=None, units=None,
+        enum_strs=None, severity=None, count=None, write_access=None, ftype=None,
+        lower_disp_limit=None, upper_disp_limit=None, *args, **kws):
+
     if severity != None:
       self.new_severity_signal.emit(int(severity))
     if write_access != None:
@@ -21,30 +24,35 @@ class Connection(PyDMConnection):
       if type(units) == bytes:
         units = units.decode()
       self.unit_signal.emit(units)
-    if count > 1:
-      self.new_waveform_signal.emit(value)
-    else:
-      if ftype in (epics.dbr.INT, epics.dbr.CTRL_INT, epics.dbr.TIME_INT, epics.dbr.ENUM, epics.dbr.CTRL_ENUM, epics.dbr.TIME_ENUM):
-        self.new_value_signal[int].emit(int(value))
-      elif ftype in (epics.dbr.CTRL_FLOAT, epics.dbr.FLOAT, epics.dbr.TIME_FLOAT, epics.dbr.CTRL_DOUBLE, epics.dbr.DOUBLE, epics.dbr.TIME_DOUBLE):
-        self.new_value_signal[float].emit(float(value))
-      else:
-        self.new_value_signal[str].emit(char_value)
-    
-      
+    if lower_disp_limit is not None:
+      self.lower_disp_limit_signal[int].emit(int(lower_disp_limit))
+    if upper_disp_limit is not None:
+      self.upper_disp_limit_signal[int].emit(int(upper_disp_limit))
+    if value is not None:
+      if count > 1:
+        self.new_waveform_signal.emit(value)
+      elif ftype is not None:
+        if ftype in (epics.dbr.INT, epics.dbr.CTRL_INT, epics.dbr.TIME_INT, epics.dbr.ENUM, epics.dbr.CTRL_ENUM, epics.dbr.TIME_ENUM):
+          self.new_value_signal[int].emit(int(value))
+        elif ftype in (epics.dbr.CTRL_FLOAT, epics.dbr.FLOAT, epics.dbr.TIME_FLOAT, epics.dbr.CTRL_DOUBLE, epics.dbr.DOUBLE, epics.dbr.TIME_DOUBLE):
+          self.new_value_signal[float].emit(float(value))
+        else:
+          self.new_value_signal[str].emit(char_value)
+
+
   def send_connection_state(self, pvname=None, conn=None, *args, **kws):
     self.connection_state_signal.emit(conn)
-  
+
   @pyqtSlot(int)
   @pyqtSlot(float)
   @pyqtSlot(str)
   def put_value(self, new_val):
     self.pv.put(new_val)
-  
+
   @pyqtSlot(np.ndarray)
   def put_waveform(self, new_waveform_val):
     self.pv.put(new_waveform_val)
-    
+
   def add_listener(self, channel):
     super(Connection, self).add_listener(channel)
     #If we are adding a listener to an already existing PV, we need to
@@ -52,7 +60,7 @@ class Connection(PyDMConnection):
     if epics.ca.isConnected(self.pv.chid):
       self.send_connection_state(conn=True)
       self.pv.run_callbacks()
-    #If the channel is used for writing to PVs, hook it up to the 'put' methods.  
+    #If the channel is used for writing to PVs, hook it up to the 'put' methods.
     if channel.value_signal is not None:
         try:
             channel.value_signal[str].connect(self.put_value, Qt.QueuedConnection)
