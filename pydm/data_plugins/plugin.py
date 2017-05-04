@@ -8,7 +8,8 @@ class PyDMConnection(QObject):
     new_severity_signal =     pyqtSignal(int)
     write_access_signal =     pyqtSignal(bool)
     enum_strings_signal =     pyqtSignal(tuple)
-    unit_signal =             pyqtSignal(str)
+    # unit_signal =             pyqtSignal(str)
+    unit_signal =             pyqtSignal([str],[bytes])
     prec_signal =             pyqtSignal(int)
 
     upper_disp_limit_signal =      pyqtSignal([float], [int])
