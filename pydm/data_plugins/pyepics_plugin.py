@@ -25,9 +25,9 @@ class Connection(PyDMConnection):
         units = units.decode()
       self.unit_signal.emit(units)
     if lower_disp_limit is not None:
-      self.lower_disp_limit_signal[int].emit(int(lower_disp_limit))
+      self.lower_disp_limit_signal[float].emit(float(lower_disp_limit))
     if upper_disp_limit is not None:
-      self.upper_disp_limit_signal[int].emit(int(upper_disp_limit))
+      self.upper_disp_limit_signal[float].emit(float(upper_disp_limit))
     if value is not None:
       if count > 1:
         self.new_waveform_signal.emit(value)
