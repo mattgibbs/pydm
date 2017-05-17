@@ -350,8 +350,6 @@ class QLed(QWidget):
         dark_str="rgb(%d,%d,%d)" % (dark_r,dark_g,dark_b)
         light_str="rgb(%d,%d,%d)" % self.adjust(dark_r,dark_g,dark_b)
 
-        # print(self.shapes[self.m_shape])
-        # print(type(self.shapes[self.m_shape]))
         shape_bytes = bytes(self.shapes[self.m_shape] % (dark_str,light_str), 'utf-8')
         self.renderer.load(QByteArray(shape_bytes))
         self.renderer.render(painter, bounds)

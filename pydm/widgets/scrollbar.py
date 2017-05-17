@@ -1,4 +1,4 @@
-from pydm.PyQt.QtGui import QLabel, QApplication, QColor, QPalette, QWidget, QScrollBar
+from pydm.PyQt.QtGui import QScrollBar, QWidget
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty, QState, QStateMachine, QPropertyAnimation, QByteArray
 from pydm.widgets.channel import PyDMChannel
 import time
@@ -9,9 +9,9 @@ class PyDMScrollBar(QScrollBar):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, orientation=Qt.Horizontal, parent=None, channel=None):
+    def __init__(self, parent=None, orientation=Qt.Horizontal, channel=''):
         super(PyDMScrollBar, self).__init__(orientation,parent)
-
+        # self.setOrientation(Qt.Horizontal)
         self._connected = False
         self._channels = None
         self._channel = channel
