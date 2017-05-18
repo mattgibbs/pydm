@@ -17,3 +17,7 @@ from pydm.widgets.enum_combo_box_qtplugin import PyDMEnumComboBoxPlugin
 print("Loading SiriusDM Widgets")
 from pydm.widgets.led_qtplugin import PyDMLedPlugin
 from pydm.widgets.scrollbar_qtplugin import PyDMScrollBarPlugin
+
+from pydm.widgets.qled_qtplugin import QLedPlugin
+from pydm.widgets.basemultiplot_qtplugin import BaseMultiPlotPlugin
+from pydm.widgets.multitimeplot_qtplugin import PyDMMultiTimePlotPlugin

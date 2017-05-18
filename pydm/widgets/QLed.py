@@ -282,6 +282,22 @@ class QLed(QWidget):
         self._pressed=False
         self.renderer=QSvgRenderer()
 
+        #ColorMap Enums
+        QLed.Grey   = -1
+        QLed.Red    = 0
+        QLed.Green  = 1
+        QLed.Yellow = 2
+        QLed.Orange = 3
+        QLed.Purple = 4
+        QLed.Blue   = 5
+
+        #Shapes Enums
+        QLed.Circle   = 1
+        QLed.Round    = 2
+        QLed.Square   = 3
+        QLed.Triangle = 4
+
+
     def value(self): return self.m_value
     def setValue(self, value):
         self.m_value=value
