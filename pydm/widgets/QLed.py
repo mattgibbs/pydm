@@ -282,6 +282,22 @@ class QLed(QWidget):
         self._pressed=False
         self.renderer=QSvgRenderer()
 
+        #ColorMap Enums
+        QLed.Grey   = -1
+        QLed.Red    = 0
+        QLed.Green  = 1
+        QLed.Yellow = 2
+        QLed.Orange = 3
+        QLed.Purple = 4
+        QLed.Blue   = 5
+
+        #Shapes Enums
+        QLed.Circle   = 1
+        QLed.Round    = 2
+        QLed.Square   = 3
+        QLed.Triangle = 4
+
+
     def value(self): return self.m_value
     def setValue(self, value):
         self.m_value=value
@@ -350,8 +366,6 @@ class QLed(QWidget):
         dark_str="rgb(%d,%d,%d)" % (dark_r,dark_g,dark_b)
         light_str="rgb(%d,%d,%d)" % self.adjust(dark_r,dark_g,dark_b)
 
-        # print(self.shapes[self.m_shape])
-        # print(type(self.shapes[self.m_shape]))
         shape_bytes = bytes(self.shapes[self.m_shape] % (dark_str,light_str), 'utf-8')
         self.renderer.load(QByteArray(shape_bytes))
         self.renderer.render(painter, bounds)

@@ -1,7 +1,7 @@
 from pydm.PyQt.QtGui import QLabel, QApplication, QColor, QPalette, QWidget
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty, QState, QStateMachine, QPropertyAnimation, QByteArray
 from pydm.widgets.channel import PyDMChannel
-from .QLed import QLed
+from pydm.widgets.QLed import QLed
 
 class PyDMLed(QLed):
 
@@ -13,15 +13,15 @@ class PyDMLed(QLed):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, init_channel=None, bit=-1, enum_map=None):
+    def __init__(self, parent=None, init_channel='', bit=-1, enum_map=None):
         super(PyDMLed, self).__init__(parent)
         self._value = None
 
-        if bit >= 0:
+        if bit >= 0 :
             self._bit = int(bit)
             self._mask = 1 << bit
         else:
-            self._bit = None
+            self._bit = -1
             self._mask = None
 
         self._enum_strings = None
@@ -33,12 +33,12 @@ class PyDMLed(QLed):
 
     def pvbit(self): return self._bit
     def setPvBit(self, newBit):
-        if newBit >= 0:
+        if newBit >= -1:
             self._bit=newBit
             self.update()
     pvbit=pyqtProperty(int, pvbit, setPvBit)
 
-    # This property is not available to desiner yet
+    # This property is not available to designer yet
     def enumMap(self): return self._enum_map
     def setEnumMap(self, enum_map):
         self._enum_map = enum_map
@@ -56,7 +56,7 @@ class PyDMLed(QLed):
     @pyqtSlot(str)
     def receiveValue(self, value):
         if self._enum_strings is None: #PV of type integer or float
-            if self._bit == -1: #Led represents value of PV
+            if self._bit < 0: #Led represents value of PV
                 if isinstance(value, str):
                     value = int(value)
                 if value:
