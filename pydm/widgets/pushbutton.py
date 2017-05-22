@@ -23,12 +23,12 @@ class PyDMPushButton(QPushButton):
     to the current value of the channel. This means that the button will
     increment a channel by a fixed amount with every click, a consistent
     relative move
-    
+
     Parameters
     ----------
     pressValue : int, float, str
         Value to be sent when the button is clicked
-    
+
     channel : str
         ID of channel to manipulate
 
@@ -50,7 +50,7 @@ class PyDMPushButton(QPushButton):
     send_value_signal = pyqtSignal([int],[float],[str])
 
     def __init__(self,parent=None,label=None,icon=None,
-                 pressValue=None,relative=False, 
+                 pressValue=None,relative=False,
                  channel= None):
         if icon:
             super(PyDMPushButton,self).__init__(icon,label,parent)
@@ -60,7 +60,7 @@ class PyDMPushButton(QPushButton):
             super(PyDMPushButton,self).__init__(parent)
 
         self._value       = None
-        self._pressValue  = pressValue 
+        self._pressValue  = pressValue
         self._relative    = relative
 
         self._channel     = channel
@@ -99,13 +99,13 @@ class PyDMPushButton(QPushButton):
     )
     def pressValue(self):
         return str(self._pressValue)
-    
+
     @pressValue.setter
     def pressValue(self,value):
         if value != self._pressValue:
-            self._pressValue = value 
-   
-    
+            self._pressValue = value
+
+
     @pyqtProperty(bool,doc=
     """
     The mode of operation of the PyDMPushButton
@@ -117,7 +117,7 @@ class PyDMPushButton(QPushButton):
     This flag will be ignored if the connected channel sends a str type value
     to :meth:`.receiveValue`. This is designed to eliminate the undesirable
     behavior of concantenating strings as opposed to doing mathematical
-    addition. 
+    addition.
     """
     )
     def relativeChange(self):
@@ -127,8 +127,8 @@ class PyDMPushButton(QPushButton):
     def relativeChange(self,choice):
         if self._relative != choice:
             self._relative = choice
-    
-    
+
+
     @pyqtSlot(int)
     @pyqtSlot(float)
     @pyqtSlot(str)
@@ -139,21 +139,21 @@ class PyDMPushButton(QPushButton):
         While the channel value is not displayed inherently in the Widget, the
         value is stored in order to accomadate the relative mode of operation.
         Also, the type of the incoming value is stored as well. This allows the
-        Widget to send back the same Python type as received from the plugin. 
+        Widget to send back the same Python type as received from the plugin.
         """
         self._value       = new_value
         self._channeltype = type(new_value)
-    
+
     @pyqtSlot(bool)
     def connectionStateChanged(self, connected):
       self._connected = connected
       self.update_enabled_state()
-    
+
     @pyqtSlot(bool)
     def writeAccessChanged(self, write_access):
       self._write_access = write_access
       self.update_enabled_state()
-    
+
     def update_enabled_state(self):
       self.setEnabled(self._write_access and self._connected)
 
@@ -163,9 +163,9 @@ class PyDMPushButton(QPushButton):
         Send a new value to the channel
 
         This function interprets the settings of the PyDMPushButton and sends
-        the appropriate value out through the :attr:`.send_value_signal`.   
+        the appropriate value out through the :attr:`.send_value_signal`.
         """
-        if not self._pressValue or self._value is None:
+        if self._pressValue is None or self._value is None:
             return None
 
         if not self._relative or self._channeltype == str:
@@ -203,4 +203,3 @@ class PyDMPushButton(QPushButton):
                             connection_slot = self.connectionStateChanged,
                             write_access_slot = self.writeAccessChanged),
                ]
-

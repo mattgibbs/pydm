@@ -13,11 +13,11 @@ class PyDMLed(QLed):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, init_channel=None, bit=0, enum_map={}):
+    def __init__(self, parent=None, init_channel=None, bit=-1, enum_map=None):
         super(PyDMLed, self).__init__(parent)
         self._value = None
 
-        if bit is not None:
+        if bit >= 0:
             self._bit = int(bit)
             self._mask = 1 << bit
         else:
@@ -56,7 +56,7 @@ class PyDMLed(QLed):
     @pyqtSlot(str)
     def receiveValue(self, value):
         if self._enum_strings is None: #PV of type integer or float
-            if self._bit is None: #Led represents value of PV
+            if self._bit == -1: #Led represents value of PV
                 if isinstance(value, str):
                     value = int(value)
                 if value:
