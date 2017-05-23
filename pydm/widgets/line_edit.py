@@ -9,15 +9,17 @@ class PyDMLineEdit(QLineEdit):
     """
     __pyqtSignals__ = ("send_value_signal(str)",
                        "connected_signal()",
-                       "disconnected_signal()", 
-                       "no_alarm_signal()", 
-                       "minor_alarm_signal()", 
-                       "major_alarm_signal()", 
+                       "disconnected_signal()",
+                       "no_alarm_signal()",
+                       "minor_alarm_signal()",
+                       "major_alarm_signal()",
                        "invalid_alarm_signal()"
                       )
-                     
+
     send_value_signal = pyqtSignal([int],[float],[str])
-    
+    connected_signal = pyqtSignal()
+    disconnected_signal = pyqtSignal()
+
     def __init__(self,parent=None,channel=None):
         super(PyDMLineEdit, self).__init__(parent)
         self._value       = None
@@ -27,17 +29,17 @@ class PyDMLineEdit(QLineEdit):
 
         self._useprec    = True
         self._prec       = None
-        
-        self._userformat = None 
-        
+
+        self._userformat = None
+
         self._scale      = 1
-        
+
         self._useunits   = True
         self._units      = None
         self._unitformat = None
 
         self.returnPressed.connect(self.sendValue)
-        
+
         #Create Context Menu upon Right Click
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.launchMenu)
@@ -61,8 +63,8 @@ class PyDMLineEdit(QLineEdit):
     def channel(self, value):
         if self._channel != value:
             self._channel = str(value)
-    
- 
+
+
     @pyqtProperty(bool,doc=
     """
     A choice whether or not to use the precision given by channel.
@@ -84,15 +86,15 @@ class PyDMLineEdit(QLineEdit):
     def usePrecision(self,choice):
         if self._useprec != choice:
             self._useprec = choice
-    
-    
+
+
     @pyqtProperty(bool,doc=
     """
     A choice whether or not to show the units given by the channel
 
     If set to True, the units given in the channel will be displayed with the
     value. If using an EPICS channel, this will automatically be linked to the
-    EGU field of the PV. 
+    EGU field of the PV.
     """
     )
     def showUnits(self):
@@ -102,8 +104,8 @@ class PyDMLineEdit(QLineEdit):
     def showUnits(self,choice):
         if self._useunits != choice:
             self._useunits = choice
-    
-    
+
+
     @pyqtProperty(str,doc=
     """
     A user defined format for the text display value
@@ -118,7 +120,7 @@ class PyDMLineEdit(QLineEdit):
     type. Therefore, if you wanted to enter a custom float or integer
     formatting command, you should not use the channel precision. Finally, if
     the :attr:`.showUnits` property is True, the current unit of the channel
-    will be appended on to the end of the string. 
+    will be appended on to the end of the string.
     """
     )
     def userFormat(self):
@@ -145,9 +147,9 @@ class PyDMLineEdit(QLineEdit):
         """
         self._value       = value
         self._channeltype = type(value)
-        self.setDisplay() 
-  
-    
+        self.setDisplay()
+
+
     @pyqtSlot()
     def sendValue(self):
         """
@@ -158,29 +160,29 @@ class PyDMLineEdit(QLineEdit):
         ReturnPressed signal of the PyDMLineEdit
         """
         send_value = str(self.text())
-        
+
         #Clean text of all formatting
         if self._unitformat:
             send_value = send_value.strip(self._unitformat)
-        
+
         if self._userformat:
             send_value = send_value.strip(self._userformat)
-        
+
         #Remove scale factor
         if self._scale and self._channeltype != str:
             send_value = (self._channeltype(send_value)
                           / self._channeltype(self._scale))
-         
+
         self.send_value_signal[self._channeltype].emit(self._channeltype(send_value))
-   
-    
+
+
     @pyqtSlot(bool)
     def writeAccessChanged(self, write_access):
         """
         Change the PyDMLineEdit to read only if write access is denied
         """
         self.setReadOnly(not write_access)
- 
+
 
     @pyqtSlot(int)
     def receivePrecision(self,value):
@@ -210,8 +212,8 @@ class PyDMLineEdit(QLineEdit):
         self._unitformat = '{{:}} {:}'.format(unit)
         self.setDisplay()
         self.createUnitOptions()
-        
-    
+
+
     def createUnitOptions(self):
         """
         Create the menu for displaying possible unit values
@@ -229,15 +231,15 @@ class PyDMLineEdit(QLineEdit):
                 self.unitMenu.addAction(choice,partial(self.apply_conversion,choice))
         else:
             self.unitMenu.addAction('No Unit Conversions found')
- 
-    
+
+
     def apply_conversion(self,unit):
         """
         Convert the current unit to a different one
 
         This function will attempt to find a scalar to convert the current unit
         type to the desired one and reset the display with the new conversion.
-        
+
         Parameters
         ----------
         unit : str
@@ -248,7 +250,7 @@ class PyDMLineEdit(QLineEdit):
                            'initial units supplied')
             return None
 
-        scale = utilities.convert(str(self._units),unit) 
+        scale = utilities.convert(str(self._units),unit)
         if scale:
             self._scale = scale*float(self._scale)
             self._units = unit
@@ -264,7 +266,7 @@ class PyDMLineEdit(QLineEdit):
         Launch the context menu with the appropriate unit conversions
         """
         return self.menu.exec_(self.mapToGlobal(point))
-   
+
 
     def setDisplay(self):
         """
@@ -279,27 +281,27 @@ class PyDMLineEdit(QLineEdit):
         if not isinstance(value,str):
             if self._scale and value:
                 value *= self._channeltype(self._scale)
-            
-            if self._prec and self._useprec:
+
+            if self._prec and self._useprec and value:
                 value = self._prec.format(value)
             else:
                 value = str(value)
-        
+
         if self._userformat:
             value = self._userformat.format(value)
-        
+
         if self._units and self.showUnits:
             value = self._unitformat.format(value)
-        
+
         self._display = str(value)
-        
+
         if not self.hasFocus():
             self.setText(self._display)
 
     def focusOutEvent(self, event):
         """
         Unselect PyDMLineEdit in PyDMApplication
-        
+
         Overwrites the function called when a user leaves a PyDMLineEdit
         without pressing return.  Resets the value of the text field to the
         current channel value.

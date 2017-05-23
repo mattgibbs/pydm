@@ -12,8 +12,8 @@ class PyDMConnection(QObject):
     unit_signal =             pyqtSignal([str],[bytes])
     prec_signal =             pyqtSignal(int)
 
-    upper_disp_limit_signal =      pyqtSignal(int)
-    lower_disp_limit_signal =      pyqtSignal(int)
+    upper_disp_limit_signal =      pyqtSignal([float], [int])
+    lower_disp_limit_signal =      pyqtSignal([float], [int])
 
     def __init__(self, channel, address, parent=None):
         super(PyDMConnection, self).__init__(parent)
