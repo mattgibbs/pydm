@@ -11,7 +11,7 @@ class PyDMScrollBar(QScrollBar):
 
     def __init__(self, parent=None, orientation=Qt.Horizontal, channel=''):
         super(PyDMScrollBar, self).__init__(orientation,parent)
-        # self.setOrientation(Qt.Horizontal)
+
         self._connected = False
         self._channels = None
         self._channel = channel
@@ -26,22 +26,23 @@ class PyDMScrollBar(QScrollBar):
     def connectionStateChanged(self, connected):
         self._connected = connected
         if connected:
-            print("Connected")
+            # print("Connected")
             self.connected_signal.emit()
         else:
             self.disconnected_signal.emit()
 
     @pyqtSlot(float)
     def receiveValue(self, value):
-        print("Scroll Bar Received Value {}".format(value))
+        # print("Scroll Bar Received Value {}".format(value))
         self._channeltype = type(value)
         self.setValue(value)
 
     @pyqtSlot()
     def value_changed(self):
         ''' Emits a value changed signal '''
-        print("Scroll Bar Emitting {}".format(self.value()))
-        self.value_changed_signal[self._channeltype].emit(self._channeltype(self.value()))
+        # print("Scroll Bar Emitting {}".format(self.value()))
+        if self._connected:
+            self.value_changed_signal[self._channeltype].emit(self._channeltype(self.value()))
 
     def getChannel(self):
         return str(self._channel)
