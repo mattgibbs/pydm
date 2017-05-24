@@ -1,7 +1,7 @@
 from ..PyQt.QtGui import QColor, QBrush
 from ..PyQt.QtCore import pyqtProperty
 # from pyqtgraph import GraphicsLayoutWidget, PlotItem, AxisItem, PlotCurveItem, ViewBox
-from pyqtgraph import PlotWidget, PlotItem, AxisItem, PlotCurveItem, ViewBox, mkPen
+from pyqtgraph import PlotWidget, PlotItem, AxisItem, PlotCurveItem, ViewBox, mkPen, LegendItem
 
 class BaseMultiPlot(PlotWidget):
 
@@ -19,11 +19,15 @@ class BaseMultiPlot(PlotWidget):
             self._XAxis1 = axisItems['bottom']
             self._YAxis1 = axisItems['left']
             self._YAxis2 = axisItems['right']
-
         self._axisIndex = [self._XAxis1, self._YAxis1, self._YAxis2]
         self._axisItems = {'bottom': self._XAxis1, 'left': self._YAxis1, 'right': self._YAxis2}
         super(BaseMultiPlot, self).__init__(parent=parent, background=background, axisItems=self._axisItems)
         self.plotItem = self.getPlotItem()
+
+        #Legend
+        self.legend = LegendItem(size=None, offset=None)
+        self.legend.setParentItem(self.plotItem.vb)
+        self._showLegend = True
 
         #Another ViewBoxes to handle other traces
         #ViewBox2 associated to secondary Y Axis
@@ -63,7 +67,6 @@ class BaseMultiPlot(PlotWidget):
 
         self.updateViews()
         self.plotItem.vb.sigResized.connect(self.updateViews)
-
         self._plotIndex = [None,self.plotItem,self.viewBox2,self.viewBox3]
 
         #Traces' Colors
@@ -83,23 +86,42 @@ class BaseMultiPlot(PlotWidget):
         self.trace13Color = QColor(0,102,0)
         self.trace14Color = QColor(0,0,102)
 
+        #Traces' Names
+        self.trace0Title = 'Trace 0'
+        self.trace1Title = 'Trace 1'
+        self.trace2Title = 'Trace 2'
+        self.trace3Title = 'Trace 3'
+        self.trace4Title = 'Trace 4'
+        self.trace5Title = 'Trace 5'
+        self.trace6Title = 'Trace 6'
+        self.trace7Title = 'Trace 7'
+        self.trace8Title = 'Trace 8'
+        self.trace9Title = 'Trace 9'
+        self.trace10Title = 'Trace 10'
+        self.trace11Title = 'Trace 11'
+        self.trace12Title = 'Trace 12'
+        self.trace13Title = 'Trace 13'
+        self.trace14Title = 'Trace 14'
+
         #Possible traces
-        self.trace0 = PlotCurveItem(pen=mkPen(self.trace0Color,width=2))
-        self.plotItem.addItem(self.trace0) #Initiate just trace0
-        self.trace1 = PlotCurveItem(pen=mkPen(self.trace1Color,width=2))
-        self.trace2 = PlotCurveItem(pen=mkPen(self.trace2Color,width=2))
-        self.trace3 = PlotCurveItem(pen=mkPen(self.trace3Color,width=2))
-        self.trace4 = PlotCurveItem(pen=mkPen(self.trace4Color,width=2))
-        self.trace5 = PlotCurveItem(pen=mkPen(self.trace5Color,width=2))
-        self.trace6 = PlotCurveItem(pen=mkPen(self.trace6Color,width=2))
-        self.trace7 = PlotCurveItem(pen=mkPen(self.trace7Color,width=2))
-        self.trace8 = PlotCurveItem(pen=mkPen(self.trace8Color,width=2))
-        self.trace9 = PlotCurveItem(pen=mkPen(self.trace9Color,width=2))
-        self.trace10 = PlotCurveItem(pen=mkPen(self.trace10Color,width=2))
-        self.trace11 = PlotCurveItem(pen=mkPen(self.trace11Color,width=2))
-        self.trace12 = PlotCurveItem(pen=mkPen(self.trace12Color,width=2))
-        self.trace13 = PlotCurveItem(pen=mkPen(self.trace13Color,width=2))
-        self.trace14 = PlotCurveItem(pen=mkPen(self.trace14Color,width=2))
+        self.trace0 = PlotCurveItem(pen=mkPen(self.trace0Color,width=2),name=self.trace0Title)
+        self.plotItem.addItem(self.trace0)                              #Initiate just trace0
+        self.legend.addItem(self.trace0,self.trace0Title)
+        self._t0 = self.legendGetAddedItem()
+        self.trace1 = PlotCurveItem(pen=mkPen(self.trace1Color,width=2),name=self.trace1Title)
+        self.trace2 = PlotCurveItem(pen=mkPen(self.trace2Color,width=2),name=self.trace2Title)
+        self.trace3 = PlotCurveItem(pen=mkPen(self.trace3Color,width=2),name=self.trace3Title)
+        self.trace4 = PlotCurveItem(pen=mkPen(self.trace4Color,width=2),name=self.trace4Title)
+        self.trace5 = PlotCurveItem(pen=mkPen(self.trace5Color,width=2),name=self.trace5Title)
+        self.trace6 = PlotCurveItem(pen=mkPen(self.trace6Color,width=2),name=self.trace6Title)
+        self.trace7 = PlotCurveItem(pen=mkPen(self.trace7Color,width=2),name=self.trace7Title)
+        self.trace8 = PlotCurveItem(pen=mkPen(self.trace8Color,width=2),name=self.trace8Title)
+        self.trace9 = PlotCurveItem(pen=mkPen(self.trace9Color,width=2),name=self.trace9Title)
+        self.trace10 = PlotCurveItem(pen=mkPen(self.trace10Color,width=2),name=self.trace10Title)
+        self.trace11 = PlotCurveItem(pen=mkPen(self.trace11Color,width=2),name=self.trace11Title)
+        self.trace12 = PlotCurveItem(pen=mkPen(self.trace12Color,width=2),name=self.trace12Title)
+        self.trace13 = PlotCurveItem(pen=mkPen(self.trace13Color,width=2),name=self.trace13Title)
+        self.trace14 = PlotCurveItem(pen=mkPen(self.trace14Color,width=2),name=self.trace14Title)
 
         #Traces' Y Axis
         self.trace0YAxisIndex = 1
@@ -171,61 +193,103 @@ class BaseMultiPlot(PlotWidget):
         if value >= 1 and value <= 15:
             if self._traceCount < 2 and value >= 2:
                 self._plotIndex[self.trace1YAxisIndex].addItem(self.trace1)
+                self.legend.addItem(self.trace1,self.trace1Title)
+                self._t1 = self.legendGetAddedItem()
             if self._traceCount < 3 and value >= 3:
                 self._plotIndex[self.trace2YAxisIndex].addItem(self.trace2)
+                self.legend.addItem(self.trace2,self.trace2Title)
+                self._t2 = self.legendGetAddedItem()
             if self._traceCount < 4 and value >= 4:
                 self._plotIndex[self.trace3YAxisIndex].addItem(self.trace3)
+                self.legend.addItem(self.trace3,self.trace3Title)
+                self._t3 = self.legendGetAddedItem()
             if self._traceCount < 5 and value >= 5:
                 self._plotIndex[self.trace4YAxisIndex].addItem(self.trace4)
+                self.legend.addItem(self.trace4,self.trace4Title)
+                self._t4 = self.legendGetAddedItem()
             if self._traceCount < 6 and value >= 6:
                 self._plotIndex[self.trace5YAxisIndex].addItem(self.trace5)
+                self.legend.addItem(self.trace5,self.trace5Title)
+                self._t5 = self.legendGetAddedItem()
             if self._traceCount < 7 and value >= 7:
                 self._plotIndex[self.trace6YAxisIndex].addItem(self.trace6)
+                self.legend.addItem(self.trace6,self.trace6Title)
+                self._t6 = self.legendGetAddedItem()
             if self._traceCount < 8 and value >= 8:
                 self._plotIndex[self.trace7YAxisIndex].addItem(self.trace7)
+                self.legend.addItem(self.trace7,self.trace7Title)
+                self._t7 = self.legendGetAddedItem()
             if self._traceCount < 9 and value >= 9:
                 self._plotIndex[self.trace8YAxisIndex].addItem(self.trace8)
+                self.legend.addItem(self.trace8,self.trace8Title)
+                self._t8 = self.legendGetAddedItem()
             if self._traceCount < 10 and value >= 10:
                 self._plotIndex[self.trace9YAxisIndex].addItem(self.trace9)
+                self.legend.addItem(self.trace9,self.trace9Title)
+                self._t9 = self.legendGetAddedItem()
             if self._traceCount < 11 and value >= 11:
                 self._plotIndex[self.trace10YAxisIndex].addItem(self.trace10)
+                self.legend.addItem(self.trace10,self.trace10Title)
+                self._t10 = self.legendGetAddedItem()
             if self._traceCount < 12 and value >= 12:
                 self._plotIndex[self.trace11YAxisIndex].addItem(self.trace11)
+                self.legend.addItem(self.trace11,self.trace11Title)
+                self._t11 = self.legendGetAddedItem()
             if self._traceCount < 13 and value >= 13:
                 self._plotIndex[self.trace12YAxisIndex].addItem(self.trace12)
+                self.legend.addItem(self.trace12,self.trace12Title)
+                self._t12 = self.legendGetAddedItem()
             if self._traceCount < 14 and value >= 14:
                 self._plotIndex[self.trace13YAxisIndex].addItem(self.trace13)
+                self.legend.addItem(self.trace13,self.trace13Title)
+                self._t13 = self.legendGetAddedItem()
             if self._traceCount < 15 and value >= 15:
                 self._plotIndex[self.trace14YAxisIndex].addItem(self.trace14)
+                self.legend.addItem(self.trace14,self.trace14Title)
+                self._t14 = self.legendGetAddedItem()
 
             if self._traceCount >= 2 and value < 2:
                 self._plotIndex[self.trace1YAxisIndex].removeItem(self.trace1)
+                self.legendRemoveItem(self._t1)
             if self._traceCount >= 3 and value < 3:
                 self._plotIndex[self.trace2YAxisIndex].removeItem(self.trace2)
+                self.legendRemoveItem(self._t2)
             if self._traceCount >= 4 and value < 4:
                 self._plotIndex[self.trace3YAxisIndex].removeItem(self.trace3)
+                self.legendRemoveItem(self._t3)
             if self._traceCount >= 5 and value < 5:
                 self._plotIndex[self.trace4YAxisIndex].removeItem(self.trace4)
+                self.legendRemoveItem(self._t4)
             if self._traceCount >= 6 and value < 6:
                 self._plotIndex[self.trace5YAxisIndex].removeItem(self.trace5)
+                self.legendRemoveItem(self._t5)
             if self._traceCount >= 7 and value < 7:
                 self._plotIndex[self.trace6YAxisIndex].removeItem(self.trace6)
+                self.legendRemoveItem(self._t6)
             if self._traceCount >= 8 and value < 8:
                 self._plotIndex[self.trace7YAxisIndex].removeItem(self.trace7)
+                self.legendRemoveItem(self._t7)
             if self._traceCount >= 9 and value < 9:
                 self._plotIndex[self.trace8YAxisIndex].removeItem(self.trace8)
+                self.legendRemoveItem(self._t8)
             if self._traceCount >= 10 and value < 10:
                 self._plotIndex[self.trace9YAxisIndex].removeItem(self.trace9)
+                self.legendRemoveItem(self._t9)
             if self._traceCount >= 11 and value < 11:
                 self._plotIndex[self.trace10YAxisIndex].removeItem(self.trace10)
+                self.legendRemoveItem(self._t10)
             if self._traceCount >= 12 and value < 12:
                 self._plotIndex[self.trace11YAxisIndex].removeItem(self.trace11)
+                self.legendRemoveItem(self._t11)
             if self._traceCount >= 13 and value < 13:
                 self._plotIndex[self.trace12YAxisIndex].removeItem(self.trace12)
+                self.legendRemoveItem(self._t12)
             if self._traceCount >= 14 and value < 14:
                 self._plotIndex[self.trace13YAxisIndex].removeItem(self.trace13)
+                self.legendRemoveItem(self._t13)
             if self._traceCount >= 15 and value < 15:
                 self._plotIndex[self.trace14YAxisIndex].removeItem(self.trace14)
+                self.legendRemoveItem(self._t14)
             self._traceCount = value
             # print(value)
 
@@ -316,6 +380,18 @@ class BaseMultiPlot(PlotWidget):
         self.setTitle(self._title)
 
     title = pyqtProperty(str, getPlotTitle, setPlotTitle, resetPlotTitle)
+
+    def getShowLegend(self):
+        return self._showLegend
+
+    def setShowLegend(self, value):
+        self._showLegend = value
+        self.legend.setVisible(value)
+
+    def resetShowLegend(self):
+        self.setShowLegend(True)
+
+    showLegend = pyqtProperty("bool", getShowLegend, setShowLegend, resetShowLegend)
 
     #Axis' properties
     def getXAxis1Label(self):
@@ -426,6 +502,20 @@ class BaseMultiPlot(PlotWidget):
 
     Trace0YAxisIndex = pyqtProperty(int,getTrace0YAxisIndex,setTrace0YAxisIndex)
 
+    def getTrace0Title(self):
+        return str(self.trace0Title)
+
+    def setTrace0Title(self, value):
+        self.legendRemoveItem(self._t0)
+        self.trace0Title = str(value)
+        self.legend.addItem(self.trace0,self.trace0Title)
+        self._t0 = self.legendGetAddedItem()
+
+    def resetTrace0Title(self):
+        self.setTrace0Title('Trace 0')
+
+    Trace0Title = pyqtProperty(str, getTrace0Title, setTrace0Title, resetTrace0Title)
+
     def getTrace1Color(self):
         # print(self.trace1Color)
         return self.trace1Color
@@ -449,6 +539,21 @@ class BaseMultiPlot(PlotWidget):
 
     Trace1YAxisIndex = pyqtProperty(int,getTrace1YAxisIndex,setTrace1YAxisIndex)
 
+    def getTrace1Title(self):
+        return str(self.trace1Title)
+
+    def setTrace1Title(self, value):
+        if self._traceCount > 1:
+            self.legendRemoveItem(self._t1)
+            self.trace1Title = str(value)
+            self.legend.addItem(self.trace1,self.trace1Title)
+            self._t1 = self.legendGetAddedItem()
+
+    def resetTrace1Title(self):
+        self.setTrace1Title('Trace 1')
+
+    Trace1Title = pyqtProperty(str, getTrace1Title, setTrace1Title, resetTrace1Title)
+
     def getTrace2Color(self):
         return self.trace2Color
 
@@ -470,6 +575,21 @@ class BaseMultiPlot(PlotWidget):
             # print(new_axis)
 
     Trace2YAxisIndex = pyqtProperty(int,getTrace2YAxisIndex,setTrace2YAxisIndex)
+
+    def getTrace2Title(self):
+        return str(self.trace2Title)
+
+    def setTrace2Title(self, value):
+        if self._traceCount > 2:
+            self.legendRemoveItem(self._t2)
+            self.trace2Title = str(value)
+            self.legend.addItem(self.trace2,self.trace2Title)
+            self._t2 = self.legendGetAddedItem()
+
+    def resetTrace2Title(self):
+        self.setTrace2Title('Trace 2')
+
+    Trace2Title = pyqtProperty(str, getTrace2Title, setTrace2Title, resetTrace2Title)
 
     def getTrace3Color(self):
         return self.trace3Color
@@ -493,6 +613,21 @@ class BaseMultiPlot(PlotWidget):
 
     Trace3YAxisIndex = pyqtProperty(int,getTrace3YAxisIndex,setTrace3YAxisIndex)
 
+    def getTrace3Title(self):
+        return str(self.trace3Title)
+
+    def setTrace3Title(self, value):
+        if self._traceCount > 3:
+            self.legendRemoveItem(self._t3)
+            self.trace3Title = str(value)
+            self.legend.addItem(self.trace3,self.trace3Title)
+            self._t3 = self.legendGetAddedItem()
+
+    def resetTrace3Title(self):
+        self.setTrace3Title('Trace 3')
+
+    Trace3Title = pyqtProperty(str, getTrace3Title, setTrace3Title, resetTrace3Title)
+
     def getTrace4Color(self):
         return self.trace4Color
 
@@ -514,6 +649,21 @@ class BaseMultiPlot(PlotWidget):
             # print(new_axis)
 
     Trace4YAxisIndex = pyqtProperty(int,getTrace4YAxisIndex,setTrace4YAxisIndex)
+
+    def getTrace4Title(self):
+        return str(self.trace4Title)
+
+    def setTrace4Title(self, value):
+        if self._traceCount > 4:
+            self.legendRemoveItem(self._t4)
+            self.trace4Title = str(value)
+            self.legend.addItem(self.trace4,self.trace4Title)
+            self._t4 = self.legendGetAddedItem()
+
+    def resetTrace4Title(self):
+        self.setTrace1Title('Trace 4')
+
+    Trace4Title = pyqtProperty(str, getTrace4Title, setTrace4Title, resetTrace4Title)
 
     def getTrace5Color(self):
         return self.trace5Color
@@ -537,6 +687,21 @@ class BaseMultiPlot(PlotWidget):
 
     Trace5YAxisIndex = pyqtProperty(int,getTrace5YAxisIndex,setTrace5YAxisIndex)
 
+    def getTrace5Title(self):
+        return str(self.trace5Title)
+
+    def setTrace5Title(self, value):
+        if self._traceCount > 5:
+            self.legendRemoveItem(self._t5)
+            self.trace5Title = str(value)
+            self.legend.addItem(self.trace5,self.trace5Title)
+            self._t5 = self.legendGetAddedItem()
+
+    def resetTrace5Title(self):
+        self.setTrace1Title('Trace 5')
+
+    Trace5Title = pyqtProperty(str, getTrace5Title, setTrace5Title, resetTrace5Title)
+
     def getTrace6Color(self):
         return self.trace6Color
 
@@ -558,6 +723,21 @@ class BaseMultiPlot(PlotWidget):
             # print(new_axis)
 
     Trace6YAxisIndex = pyqtProperty(int,getTrace6YAxisIndex,setTrace6YAxisIndex)
+
+    def getTrace6Title(self):
+        return str(self.trace6Title)
+
+    def setTrace6Title(self, value):
+        if self._traceCount > 6:
+            self.legendRemoveItem(self._t6)
+            self.trace6Title = str(value)
+            self.legend.addItem(self.trace6,self.trace6Title)
+            self._t6 = self.legendGetAddedItem()
+
+    def resetTrace6Title(self):
+        self.setTrace6Title('Trace 6')
+
+    Trace6Title = pyqtProperty(str, getTrace6Title, setTrace6Title, resetTrace6Title)
 
     def getTrace7Color(self):
         return self.trace7Color
@@ -581,6 +761,21 @@ class BaseMultiPlot(PlotWidget):
 
     Trace7YAxisIndex = pyqtProperty(int,getTrace7YAxisIndex,setTrace7YAxisIndex)
 
+    def getTrace7Title(self):
+        return str(self.trace7Title)
+
+    def setTrace7Title(self, value):
+        if self._traceCount > 7:
+            self.legendRemoveItem(self._t7)
+            self.trace7Title = str(value)
+            self.legend.addItem(self.trace7,self.trace7Title)
+            self._t7 = self.legendGetAddedItem()
+
+    def resetTrace7Title(self):
+        self.setTrace7Title('Trace 7')
+
+    Trace7Title = pyqtProperty(str, getTrace7Title, setTrace7Title, resetTrace7Title)
+
     def getTrace8Color(self):
         return self.trace8Color
 
@@ -602,6 +797,21 @@ class BaseMultiPlot(PlotWidget):
             # print(new_axis)
 
     Trace8YAxisIndex = pyqtProperty(int,getTrace8YAxisIndex,setTrace8YAxisIndex)
+
+    def getTrace8Title(self):
+        return str(self.trace8Title)
+
+    def setTrace8Title(self, value):
+        if self._traceCount > 8:
+            self.legendRemoveItem(self._t8)
+            self.trace8Title = str(value)
+            self.legend.addItem(self.trace8,self.trace8Title)
+            self._t8 = self.legendGetAddedItem()
+
+    def resetTrace8Title(self):
+        self.setTrace8Title('Trace 8')
+
+    Trace8Title = pyqtProperty(str, getTrace8Title, setTrace8Title, resetTrace8Title)
 
     def getTrace9Color(self):
         return self.trace9Color
@@ -625,6 +835,20 @@ class BaseMultiPlot(PlotWidget):
 
     Trace9YAxisIndex = pyqtProperty(int,getTrace9YAxisIndex,setTrace9YAxisIndex)
 
+    def getTrace9Title(self):
+        return str(self.trace9Title)
+
+    def setTrace9Title(self, value):
+        if self._traceCount > 9:
+            self.legendRemoveItem(self._t9)
+            self.trace9Title = str(value)
+            self.legend.addItem(self.trace9,self.trace9Title)
+            self._t9 = self.legendGetAddedItem()
+
+    def resetTrace9Title(self):
+        self.setTrace9Title('Trace 9')
+
+    Trace9Title = pyqtProperty(str, getTrace9Title, setTrace9Title, resetTrace9Title)
 
     def getTrace10Color(self):
         return self.trace10Color
@@ -648,6 +872,21 @@ class BaseMultiPlot(PlotWidget):
 
     Trace10YAxisIndex = pyqtProperty(int,getTrace10YAxisIndex,setTrace10YAxisIndex)
 
+    def getTrace10Title(self):
+        return str(self.trace10Title)
+
+    def setTrace10Title(self, value):
+        if self._traceCount > 10:
+            self.legendRemoveItem(self._t10)
+            self.trace10Title = str(value)
+            self.legend.addItem(self.trace10,self.trace10Title)
+            self._t10 = self.legendGetAddedItem()
+
+    def resetTrace10Title(self):
+        self.setTrace10Title('Trace 10')
+
+    Trace10Title = pyqtProperty(str, getTrace10Title, setTrace10Title, resetTrace10Title)
+
     def getTrace11Color(self):
         return self.trace11Color
 
@@ -669,6 +908,21 @@ class BaseMultiPlot(PlotWidget):
             # print(new_axis)
 
     Trace11YAxisIndex = pyqtProperty(int,getTrace11YAxisIndex,setTrace11YAxisIndex)
+
+    def getTrace11Title(self):
+        return str(self.trace11Title)
+
+    def setTrace11Title(self, value):
+        if self._traceCount > 11:
+            self.legendRemoveItem(self._t11)
+            self.trace11Title = str(value)
+            self.legend.addItem(self.trace11,self.trace11Title)
+            self._t11 = self.legendGetAddedItem()
+
+    def resetTrace11Title(self):
+        self.setTrace11Title('Trace 11')
+
+    Trace11Title = pyqtProperty(str, getTrace11Title, setTrace11Title, resetTrace11Title)
 
     def getTrace12Color(self):
         return self.trace12Color
@@ -692,6 +946,21 @@ class BaseMultiPlot(PlotWidget):
 
     Trace12YAxisIndex = pyqtProperty(int,getTrace12YAxisIndex,setTrace12YAxisIndex)
 
+    def getTrace12Title(self):
+        return str(self.trace12Title)
+
+    def setTrace12Title(self, value):
+        if self._traceCount > 12:
+            self.legendRemoveItem(self._t12)
+            self.trace12Title = str(value)
+            self.legend.addItem(self.trace12,self.trace12Title)
+            self._t12 = self.legendGetAddedItem()
+
+    def resetTrace12Title(self):
+        self.setTrace12Title('Trace 12')
+
+    Trace12Title = pyqtProperty(str, getTrace12Title, setTrace12Title, resetTrace12Title)
+
     def getTrace13Color(self):
         return self.trace13Color
 
@@ -714,6 +983,21 @@ class BaseMultiPlot(PlotWidget):
 
     Trace13YAxisIndex = pyqtProperty(int,getTrace13YAxisIndex,setTrace13YAxisIndex)
 
+    def getTrace13Title(self):
+        return str(self.trace13Title)
+
+    def setTrace13Title(self, value):
+        if self._traceCount > 13:
+            self.legendRemoveItem(self._t13)
+            self.trace13Title = str(value)
+            self.legend.addItem(self.trace13,self.trace13Title)
+            self._t13 = self.legendGetAddedItem()
+
+    def resetTrace13Title(self):
+        self.setTrace13Title('Trace 13')
+
+    Trace13Title = pyqtProperty(str, getTrace13Title, setTrace13Title, resetTrace13Title)
+
     def getTrace14Color(self):
         return self.trace14Color
 
@@ -735,3 +1019,43 @@ class BaseMultiPlot(PlotWidget):
             # print(new_axis)
 
     Trace14YAxisIndex = pyqtProperty(int,getTrace14YAxisIndex,setTrace14YAxisIndex)
+
+    def getTrace14Title(self):
+        return str(self.trace14Title)
+
+    def setTrace14Title(self, value):
+        if self._traceCount > 14:
+            self.legendRemoveItem(self._t14)
+            self.trace14Title = str(value)
+            self.legend.addItem(self.trace14,self.trace14Title)
+            self._t14 = self.legendGetAddedItem()
+
+    def resetTrace14Title(self):
+        self.setTrace14Title('Trace 14')
+
+    Trace14Title = pyqtProperty(str, getTrace14Title, setTrace14Title, resetTrace14Title)
+
+    #Legend complementary methods
+    def legendGetAddedItem(self):
+        """This function should be called shortly after adding a new item in the Legend,
+        so that this item can be removed later"""
+        return self.legend.items[-1][0]
+
+    def legendRemoveItem(self, item):
+        """Removes Item from Legend from the id returned by legendGetAddedItem method"""
+        for sample, label in self.legend.items:
+            if sample == item:  # hit
+                self.legend.items.remove( (sample, label) )    # remove from itemlist
+                self.legend.layout.removeItem(sample)          # remove from layout
+                sample.close()                                 # remove from drawing
+                self.legend.layout.removeItem(label)
+                label.close()
+                self.legendUpdateSize()                       # redraq box
+
+    def legendUpdateSize(self):
+        height = 0
+        width = 0
+        for sample, label in self.legend.items:
+            height += max(sample.height(), label.height()) + 3
+            width = max(width, sample.width()+min(label.width(),100))
+        self.legend.setGeometry(0, 0, width, height)
