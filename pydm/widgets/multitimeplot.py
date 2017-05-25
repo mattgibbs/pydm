@@ -1,4 +1,4 @@
-from ..PyQt.QtCore import pyqtSlot, pyqtProperty, QTimer
+from ..PyQt.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QTimer
 from pyqtgraph import ViewBox, AxisItem, PlotItem
 import numpy as _np
 import time as _time
@@ -6,6 +6,40 @@ from .basemultiplot import BaseMultiPlot
 from .channel import PyDMChannel
 
 class PyDMMultiTimePlot(BaseMultiPlot):
+
+    #Tell Designer what signals are available.
+    __pyqtSignals__ = ( "trace0_receive_value([float],[int])", \
+                        "trace1_receive_value([float],[int])", \
+                        "trace2_receive_value([float],[int])", \
+                        "trace3_receive_value([float],[int])", \
+                        "trace4_receive_value([float],[int])", \
+                        "trace5_receive_value([float],[int])", \
+                        "trace6_receive_value([float],[int])", \
+                        "trace7_receive_value([float],[int])", \
+                        "trace8_receive_value([float],[int])", \
+                        "trace9_receive_value([float],[int])", \
+                        "trace10_receive_value([float],[int])", \
+                        "trace11_receive_value([float],[int])", \
+                        "trace12_receive_value([float],[int])", \
+                        "trace13_receive_value([float],[int])", \
+                        "trace14_receive_value([float],[int])",)
+
+    #Internal signals, used by the state machine
+    trace0_receive_value = pyqtSignal([float],[int])
+    trace1_receive_value = pyqtSignal([float],[int])
+    trace2_receive_value = pyqtSignal([float],[int])
+    trace3_receive_value = pyqtSignal([float],[int])
+    trace4_receive_value = pyqtSignal([float],[int])
+    trace5_receive_value = pyqtSignal([float],[int])
+    trace6_receive_value = pyqtSignal([float],[int])
+    trace7_receive_value = pyqtSignal([float],[int])
+    trace8_receive_value = pyqtSignal([float],[int])
+    trace9_receive_value = pyqtSignal([float],[int])
+    trace10_receive_value = pyqtSignal([float],[int])
+    trace11_receive_value = pyqtSignal([float],[int])
+    trace12_receive_value = pyqtSignal([float],[int])
+    trace13_receive_value = pyqtSignal([float],[int])
+    trace14_receive_value = pyqtSignal([float],[int])
 
     SynchronousMode = 1
     AsynchronousMode = 2
@@ -126,6 +160,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace0ReceiveNewValue(self, new_value):
+        self.trace0_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace0_data_buffer = _np.roll(self.trace0_data_buffer,-1)
             self.trace0_data_buffer[0,self._buffers_size - 1] = new_value
@@ -194,6 +229,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace1ReceiveNewValue(self, new_value):
+        self.trace1_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace1_data_buffer = _np.roll(self.trace1_data_buffer,-1)
             self.trace1_data_buffer[0,self._buffers_size - 1] = new_value
@@ -262,6 +298,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace2ReceiveNewValue(self, new_value):
+        self.trace2_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace2_data_buffer = _np.roll(self.trace2_data_buffer,-1)
             self.trace2_data_buffer[0,self._buffers_size - 1] = new_value
@@ -330,6 +367,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace3ReceiveNewValue(self, new_value):
+        self.trace3_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace3_data_buffer = _np.roll(self.trace3_data_buffer,-1)
             self.trace3_data_buffer[0,self._buffers_size - 1] = new_value
@@ -398,6 +436,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace4ReceiveNewValue(self, new_value):
+        self.trace4_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace4_data_buffer = _np.roll(self.trace4_data_buffer,-1)
             self.trace4_data_buffer[0,self._buffers_size - 1] = new_value
@@ -466,6 +505,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace5ReceiveNewValue(self, new_value):
+        self.trace5_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace5_data_buffer = _np.roll(self.trace5_data_buffer,-1)
             self.trace5_data_buffer[0,self._buffers_size - 1] = new_value
@@ -534,6 +574,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace6ReceiveNewValue(self, new_value):
+        self.trace6_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace6_data_buffer = _np.roll(self.trace6_data_buffer,-1)
             self.trace6_data_buffer[0,self._buffers_size - 1] = new_value
@@ -602,6 +643,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace7ReceiveNewValue(self, new_value):
+        self.trace7_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace7_data_buffer = _np.roll(self.trace7_data_buffer,-1)
             self.trace7_data_buffer[0,self._buffers_size - 1] = new_value
@@ -670,6 +712,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace8ReceiveNewValue(self, new_value):
+        self.trace8_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace8_data_buffer = _np.roll(self.trace8_data_buffer,-1)
             self.trace8_data_buffer[0,self._buffers_size - 1] = new_value
@@ -738,6 +781,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace9ReceiveNewValue(self, new_value):
+        self.trace9_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace9_data_buffer = _np.roll(self.trace9_data_buffer,-1)
             self.trace9_data_buffer[0,self._buffers_size - 1] = new_value
@@ -806,6 +850,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace10ReceiveNewValue(self, new_value):
+        self.trace10_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace10_data_buffer = _np.roll(self.trace10_data_buffer,-1)
             self.trace10_data_buffer[0,self._buffers_size - 1] = new_value
@@ -874,6 +919,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace11ReceiveNewValue(self, new_value):
+        self.trace11_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace11_data_buffer = _np.roll(self.trace11_data_buffer,-1)
             self.trace11_data_buffer[0,self._buffers_size - 1] = new_value
@@ -942,6 +988,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace12ReceiveNewValue(self, new_value):
+        self.trace12_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace12_data_buffer = _np.roll(self.trace12_data_buffer,-1)
             self.trace12_data_buffer[0,self._buffers_size - 1] = new_value
@@ -1010,6 +1057,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace13ReceiveNewValue(self, new_value):
+        self.trace13_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace13_data_buffer = _np.roll(self.trace13_data_buffer,-1)
             self.trace13_data_buffer[0,self._buffers_size - 1] = new_value
@@ -1078,6 +1126,7 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     @pyqtSlot(int)
     @pyqtSlot(str)
     def Trace14ReceiveNewValue(self, new_value):
+        self.trace14_receive_value.emit(new_value)
         if self._update_mode == PyDMMultiTimePlot.SynchronousMode:
             self.trace14_data_buffer = _np.roll(self.trace14_data_buffer,-1)
             self.trace14_data_buffer[0,self._buffers_size - 1] = new_value
