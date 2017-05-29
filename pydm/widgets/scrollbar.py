@@ -1,11 +1,6 @@
-<<<<<<< HEAD
 import time, math
 from pydm.PyQt.QtGui import QAbstractSlider, QScrollBar, QAction, QMenu, QInputDialog
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
-=======
-from pydm.PyQt.QtGui import QScrollBar, QWidget
-from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty, QState, QStateMachine, QPropertyAnimation, QByteArray
->>>>>>> 196517bb297b8579c9436225390280c45885a18c
 from pydm.widgets.channel import PyDMChannel
 
 class PyDMScrollBar(QScrollBar):
