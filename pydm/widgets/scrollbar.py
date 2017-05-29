@@ -9,8 +9,8 @@ class PyDMScrollBar(QScrollBar):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, orientation=Qt.Horizontal, channel=None, scale=1000):
-        super(PyDMScrollBar, self).__init__(orientation, parent)
+    def __init__(self, parent=None, orientation=Qt.Horizontal, channel='', scale=1000):
+        super(PyDMScrollBar, self).__init__(orientation,parent)
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setInvertedControls(False)
@@ -38,7 +38,6 @@ class PyDMScrollBar(QScrollBar):
     def connectionStateChanged(self, connected):
         self._connected = connected
         if connected:
-            #print("Connected")
             self.connected_signal.emit()
         else:
             self.disconnected_signal.emit()
