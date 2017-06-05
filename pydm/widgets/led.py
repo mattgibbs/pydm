@@ -26,6 +26,7 @@ class PyDMLed(QLed):
 
         self._enum_strings = None
         self._enum_map = enum_map
+        self._count = None
 
         self._connected = False
         self._channels = None
@@ -56,15 +57,10 @@ class PyDMLed(QLed):
     @pyqtSlot(str)
     def receiveValue(self, value):
         if self._enum_strings is None: #PV of type integer or float
+            value = int(value)
             if self._bit < 0: #Led represents value of PV
-                if isinstance(value, str):
-                    value = int(value)
-                if value:
-                    self.setValue(1)
-                else:
-                    self.setValue(0)
+                self.setValue(1 if value else 0)
             else: #Led represents specific bit of PV
-                value = int(value)
                 bit_val = (value & self._mask) >> self._bit
                 self.setValue(bit_val)
         else: #PV of type ENUM
@@ -77,8 +73,15 @@ class PyDMLed(QLed):
                     color = self._enum_map[enum_name]
                     self.setOnColour(color)
 
-        #TODO: PV of type array
+    @pyqtSlot(_np.ndarray)
+    def receiveWaveform(self,value):
+        if self._bit < 0 or if self._count is None: return
+        if self._bit >= self._count: return
+        self.setValue(1   if value[self._bit] else   0)
 
+    @pyqtSlot(int)
+    def receiveCount(self,value):
+        self._count = int(value)
 
     @pyqtSlot(tuple)
     def enumStringsChanged(self, enum_strings):
@@ -100,4 +103,6 @@ class PyDMLed(QLed):
         return [PyDMChannel(address=self._channel,
                             connection_slot=self.connectionStateChanged,
                             value_slot=self.receiveValue,
-                            enum_strings_slot=self.enumStringsChanged)]
+                            enum_strings_slot=self.enumStringsChanged,
+                            waveform_slot = self.receiveWaveform,
+                            count_slot = self.receiveCount)]

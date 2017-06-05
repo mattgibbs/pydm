@@ -67,7 +67,7 @@ class PyDMChannel:
     """
     def __init__(self, address=None, connection_slot=None, value_slot=None,
                  waveform_slot=None, severity_slot=None, write_access_slot=None,
-                 enum_strings_slot=None, unit_slot=None, prec_slot=None,
+                 enum_strings_slot=None, unit_slot=None, prec_slot=None, count_slot=None,
                  upper_disp_limit_slot=None, lower_disp_limit_slot=None,
                  value_signal=None, waveform_signal=None):
 
@@ -81,6 +81,7 @@ class PyDMChannel:
         self.enum_strings_slot = enum_strings_slot
         self.unit_slot         = unit_slot
         self.prec_slot         = prec_slot
+        self.count_slot        = count_slot
 
         self.upper_disp_limit_slot  = upper_disp_limit_slot
         self.lower_disp_limit_slot  = lower_disp_limit_slot
