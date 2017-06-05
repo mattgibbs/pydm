@@ -30,6 +30,8 @@ class Connection(PyDMConnection):
       self.upper_disp_limit_signal[float].emit(float(upper_disp_limit))
     if precision is not None:
       self.prec_signal.emit(int(precision))
+    if count is not None:
+        self.count_signal.emit(count)
     if value is not None:
       if count > 1:
         self.new_waveform_signal.emit(value)
@@ -78,7 +80,7 @@ class Connection(PyDMConnection):
             pass
     if channel.waveform_signal is not None:
         try:
-            channel.waveform_signal.connect(self.put_value, Qt.QueuedConnection)
+            channel.waveform_signal.connect(self.put_waveform, Qt.QueuedConnection)
         except KeyError:
             pass
 

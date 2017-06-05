@@ -25,7 +25,6 @@ class PyDMSpinBox(QDoubleSpinBox):
 
         self.valueChanged.connect(self.value_changed)
 
-
     @pyqtSlot()
     def changeStep(self):
         d, okPressed = QInputDialog.getDouble(self, "Get double","Value:", self.singleStep(), 0.1, 5, 1)
@@ -56,7 +55,6 @@ class PyDMSpinBox(QDoubleSpinBox):
                 self.value_changed_signal[self._channeltype].emit(self._channeltype(self.maximum()))
             else:
                 self.value_changed_signal[self._channeltype].emit(self._channeltype(self.value))
-
 
     @pyqtSlot(float)
     def receiveLowerLimit(self, value):

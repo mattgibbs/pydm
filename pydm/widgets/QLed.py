@@ -323,9 +323,9 @@ class QLed(QWidget):
     shape=pyqtProperty(shapeMap, shape, setShape)
 
     def sizeHint(self):
-        if self.m_shape==QLed.shapeMap.Triangle: return QSize(64,48)
-        elif self.m_shape==QLed.shapeMap.Round: return QSize(96, 48)
-        return QSize(48,48)
+        if self.m_shape==QLed.shapeMap.Triangle: return QSize(32,24)
+        elif self.m_shape==QLed.shapeMap.Round: return QSize(48, 24)
+        return QSize(24,24)
 
     def adjust(self, r, g, b):
         def normalise(x): return x/255.0

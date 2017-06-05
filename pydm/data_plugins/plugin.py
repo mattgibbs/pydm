@@ -11,6 +11,7 @@ class PyDMConnection(QObject):
     # unit_signal =             pyqtSignal(str)
     unit_signal =             pyqtSignal([str],[bytes])
     prec_signal =             pyqtSignal(int)
+    count_signal =            pyqtSignal(int)
 
     upper_disp_limit_signal =      pyqtSignal([float], [int])
     lower_disp_limit_signal =      pyqtSignal([float], [int])
@@ -52,11 +53,15 @@ class PyDMConnection(QObject):
         if channel.unit_slot is not None:
             self.unit_signal.connect(channel.unit_slot, Qt.QueuedConnection)
 
+        if channel.count_slot is not None:
+            self.count_signal.connect(channel.count_slot, Qt.QueuedConnection)
+
         if channel.prec_slot is not None:
             self.prec_signal.connect(channel.prec_slot, Qt.QueuedConnection)
 
         if channel.lower_disp_limit_slot is not None:
             self.lower_disp_limit_signal.connect(channel.lower_disp_limit_slot, Qt.QueuedConnection)
+            
         if channel.upper_disp_limit_slot is not None:
             self.upper_disp_limit_signal.connect(channel.upper_disp_limit_slot, Qt.QueuedConnection)
 
