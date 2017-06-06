@@ -1,3 +1,4 @@
+import numpy as _np
 from pydm.PyQt.QtGui import QLabel, QApplication, QColor, QPalette, QWidget
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty, QState, QStateMachine, QPropertyAnimation, QByteArray
 from pydm.widgets.channel import PyDMChannel
@@ -75,7 +76,7 @@ class PyDMLed(QLed):
 
     @pyqtSlot(_np.ndarray)
     def receiveWaveform(self,value):
-        if self._bit < 0 or if self._count is None: return
+        if self._bit < 0 or self._count is None: return
         if self._bit >= self._count: return
         self.setValue(1   if value[self._bit] else   0)
 
