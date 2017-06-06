@@ -11,8 +11,8 @@ class PyDMImageView(ImageView):
   color_maps = cmaps
   def __init__(self, parent=None, init_image_channel=None, init_width_channel=None):
     super(PyDMImageView, self).__init__(parent)
-    self._imagechannel = image_channel
-    self._widthchannel = width_channel
+    self._imagechannel = init_image_channel
+    self._widthchannel = init_width_channel
     self.image_waveform = np.zeros(0)
     self.image_width = 0
     self.ui.histogram.hide()
