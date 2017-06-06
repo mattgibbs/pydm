@@ -20,12 +20,12 @@ class PyDMLineEdit(QLineEdit):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self,parent=None,channel=None):
+    def __init__(self,parent=None, init_channel=None):
         super(PyDMLineEdit, self).__init__(parent)
         self._value       = None
         self._display     = None
         self._channeltype = None
-        self._channel     = channel
+        self._channel     = init_channel
 
         self._useprec    = True
         self._prec       = None

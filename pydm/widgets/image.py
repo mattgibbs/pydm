@@ -8,8 +8,8 @@ from .channel import PyDMChannel
 from .colormaps import cmaps
 
 class PyDMImageView(ImageView):
-  color_maps = cmaps  
-  def __init__(self, parent=None, image_channel=None, width_channel=None):
+  color_maps = cmaps
+  def __init__(self, parent=None, init_image_channel=None, init_width_channel=None):
     super(PyDMImageView, self).__init__(parent)
     self._imagechannel = image_channel
     self._widthchannel = width_channel
@@ -56,12 +56,12 @@ class PyDMImageView(ImageView):
       if self.cm_max < self.cm_min:
         self.cm_min = self.cm_max
       self.setColorMap()
-  
+
   def setColorMapLimits(self, min, max):
     self.cm_max = max
     self.cm_min = min
     self.setColorMap()
-    
+
   def setColorMapToPreset(self, name):
     self._colormapname = str(name)
     self._cm_colors = self.color_maps[str(name)]
@@ -93,7 +93,7 @@ class PyDMImageView(ImageView):
       self.image_waveform = new_waveform
     self.data_max_int = np.iinfo(self.image_waveform.dtype).max
     self.redrawImage()
-  
+
   @pyqtSlot(int)
   @pyqtSlot(float)
   @pyqtSlot(str)
@@ -105,21 +105,21 @@ class PyDMImageView(ImageView):
       self.image_waveform = self.image_waveform.reshape((int(self.image_width),-1), order='F')
       self._needs_reshape = False
     self.redrawImage()
-  
+
   def redrawImage(self):
     if len(self.image_waveform) > 0 and self.image_width > 0:
       self.getImageItem().setImage(self.image_waveform, autoLevels=False)
-  
-  # -2 to +2, -2 is LOLO, -1 is LOW, 0 is OK, etc.  
+
+  # -2 to +2, -2 is LOLO, -1 is LOW, 0 is OK, etc.
   @pyqtSlot(int)
   def alarmStatusChanged(self, new_alarm_state):
     pass
-  
-  #0 = NO_ALARM, 1 = MINOR, 2 = MAJOR, 3 = INVALID  
+
+  #0 = NO_ALARM, 1 = MINOR, 2 = MAJOR, 3 = INVALID
   @pyqtSlot(int)
   def alarmSeverityChanged(self, new_alarm_severity):
     pass
-    
+
   #false = disconnected, true = connected
   @pyqtSlot(bool)
   def connectionStateChanged(self, connected):
@@ -127,7 +127,7 @@ class PyDMImageView(ImageView):
 
   def getImageChannel(self):
     return str(self._imagechannel)
-  
+
   def setImageChannel(self, value):
     if self._imagechannel != value:
       self._imagechannel = str(value)
@@ -135,12 +135,12 @@ class PyDMImageView(ImageView):
   def resetImageChannel(self):
     if self._imagechannel != None:
       self._imagechannel = None
-    
+
   imageChannel = pyqtProperty(str, getImageChannel, setImageChannel, resetImageChannel)
-  
+
   def getWidthChannel(self):
     return str(self._widthchannel)
-  
+
   def setWidthChannel(self, value):
     if self._widthchannel != value:
       self._widthchannel = str(value)
@@ -148,9 +148,9 @@ class PyDMImageView(ImageView):
   def resetWidthChannel(self):
     if self._widthchannel != None:
       self._widthchannel = None
-    
+
   widthChannel = pyqtProperty(str, getWidthChannel, setWidthChannel, resetWidthChannel)
-  
+
   def channels(self):
     return [PyDMChannel(address=self.imageChannel, connection_slot=self.connectionStateChanged, waveform_slot=self.receiveImageWaveform, severity_slot=self.alarmSeverityChanged),
             PyDMChannel(address=self.widthChannel, connection_slot=self.connectionStateChanged, value_slot=self.receiveImageWidth, severity_slot=self.alarmSeverityChanged)]

@@ -1,6 +1,5 @@
 import numpy as _np
-from pydm.PyQt.QtGui import QLabel, QApplication, QColor, QPalette, QWidget
-from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty, QState, QStateMachine, QPropertyAnimation, QByteArray
+from pydm.PyQt.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
 from pydm.widgets.channel import PyDMChannel
 from pydm.widgets.QLed import QLed
 

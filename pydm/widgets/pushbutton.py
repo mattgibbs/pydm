@@ -51,7 +51,7 @@ class PyDMPushButton(QPushButton):
 
     def __init__(self,parent=None,label=None,icon=None,
                  pressValue=None,relative=False,
-                 channel= None):
+                 init_channel= None):
         if icon:
             super(PyDMPushButton,self).__init__(icon,label,parent)
         elif label:
@@ -63,7 +63,7 @@ class PyDMPushButton(QPushButton):
         self._pressValue  = pressValue
         self._relative    = relative
 
-        self._channel     = channel
+        self._channel     = init_channel
         self._channeltype = type(self._value)
         self._connected = False
         self._write_access = False

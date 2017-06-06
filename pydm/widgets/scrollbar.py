@@ -1,5 +1,4 @@
-import time, math
-from pydm.PyQt.QtGui import QAbstractSlider, QScrollBar, QAction, QMenu, QInputDialog
+from pydm.PyQt.QtGui import QScrollBar, QInputDialog
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
 from pydm.widgets.channel import PyDMChannel
 
@@ -9,7 +8,7 @@ class PyDMScrollBar(QScrollBar):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, orientation=Qt.Horizontal, channel='', scale=1000):
+    def __init__(self, parent=None, orientation=Qt.Horizontal, init_channel=None, scale=1000):
         super(PyDMScrollBar, self).__init__(orientation,parent)
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -19,7 +18,7 @@ class PyDMScrollBar(QScrollBar):
         self._scale = scale
         self._connected = False
         self._channels = None
-        self._channel = channel
+        self._channel = init_channel
         self._channeltype = None
 
         self.setSingleStep(self._scale)
