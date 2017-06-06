@@ -14,6 +14,7 @@ from pydm.widgets.waveformplot_qtplugin import PyDMWaveformPlotPlugin
 from pydm.widgets.waveformtable_qtplugin import PyDMWaveformTablePlugin
 from pydm.widgets.enum_combo_box_qtplugin import PyDMEnumComboBoxPlugin
 from pydm.widgets.spinbox_qtplugin import PyDMSpinBoxPlugin
+from pydm.widgets.log_label_qtplugin import PyDMLogLabelPlugin
 
 print("Loading SiriusDM Widgets")
 from pydm.widgets.qled_qtplugin import QLedPlugin
