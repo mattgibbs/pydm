@@ -71,7 +71,7 @@ class PyDMChannel:
                  upper_disp_limit_slot=None, lower_disp_limit_slot=None,
                  value_signal=None, waveform_signal=None):
 
-        self.address = address
+        self.address = address or '' # remove possibility of address being None
 
         self.connection_slot   = connection_slot
         self.value_slot        = value_slot
