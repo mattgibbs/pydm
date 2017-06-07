@@ -265,7 +265,7 @@ class BaseMultiPlot(PlotWidget):
                 attr_trTt = getattr(self,'trace'+v+'Title')
                 self._plotIndex[attr_trYAxInd].addItem(attr_tr)
                 self.legend.addItem(attr_tr,attr_trTt)
-                setattr(self,'_t'+v, self.legendAddedItem())
+                setattr(self,'_t'+v, self.legendGetAddedItem())
         else:
             for i in range(value,old_val):
                 v = str(i)
