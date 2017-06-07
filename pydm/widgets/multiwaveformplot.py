@@ -7,7 +7,7 @@ from .channel import PyDMChannel
 
 TRACES_CONFIGS = '''
 trace{0}_receive_waveform = pyqtSignal(_np.ndarray)
-trace{0}_receive_value    = pyqtSignal([float],[int])
+trace{0}_receive_value    = pyqtSignal([float],[int],[str],[_np.ndarray])
 
 def Trace{0}RedrawPlot(self):
     datax = self._x_data
@@ -51,7 +51,7 @@ def setTrace{0}Scale(self,new_value):
 
 @pyqtProperty(float)
 def trace{0}Scale(self):
-    return str(self._trace{0}_scale)
+    return float(self._trace{0}_scale)
 @trace{0}Scale.setter
 def trace{0}Scale(self, value):
     if self._trace{0}_scale != float(value):
@@ -100,7 +100,7 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
         exec(TRACES_CONFIGS.format(i))
 
     x_receive_waveform = pyqtSignal(_np.ndarray)
-    x_receive_value    = pyqtSignal([float],[int])
+    x_receive_value    = pyqtSignal([float],[int],[str],[_np.ndarray])
 
     @pyqtSlot(_np.ndarray)
     def setXWaveform(self, new_value):
