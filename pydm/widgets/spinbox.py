@@ -23,7 +23,7 @@ class PyDMSpinBox(QDoubleSpinBox):
         self._channel = init_channel
         self._channeltype = None
 
-        self.valueChanged.connect(self.value_changed)
+        self.valueChanged.connect(self.value_changed) # signal from spinbox
 
     @pyqtSlot()
     def changeStep(self):
