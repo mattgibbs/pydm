@@ -16,8 +16,7 @@ class PyDMLed(QLed):
     def __init__(self, parent=None, init_channel='', bit=-1, enum_map=None):
         super(PyDMLed, self).__init__(parent)
         self._value = None
-
-        self.setPvBit(bit)
+        self.pvbit = bit
 
         self._enum_strings = None
         self._enum_map = enum_map
@@ -27,15 +26,15 @@ class PyDMLed(QLed):
         self._channels = None
         self._channel = init_channel
 
+    @pyqtProperty(int)
     def pvbit(self): return self._bit
-    def setPvBit(self, newBit):
+    @pvbit.setter
+    def pvbit(self, bit):
+        self._bit = -1
+        self._mask = None
         if bit >= 0 :
             self._bit = int(bit)
             self._mask = 1 << bit
-        else:
-            self._bit = -1
-            self._mask = None
-    pvbit=pyqtProperty(int, pvbit, setPvBit)
 
     # This property is not available to designer yet
     def enumMap(self): return self._enum_map
