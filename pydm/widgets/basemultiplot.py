@@ -30,6 +30,16 @@ def trace{0}toggle_line_scatter(self,value):
             self.trace{0}.setSymbolBrush(self.trace{0}Color)
             self.trace{0}.setSymbolSize(8)
 
+def getTrace{0}Color(self):
+    return self.trace{0}Color
+
+def setTrace{0}Color(self, color):
+    if self.trace{0}Color != color:
+        self.trace{0}Color = color
+        self.trace{0}.setPen(self.trace{0}Color,width=2)
+
+Trace{0}Color = pyqtProperty(QColor,getTrace{0}Color,setTrace{0}Color)
+
 def getTrace{0}Interpolate(self):
     return self.trace{0}Interpolate
 
@@ -60,15 +70,20 @@ def resetTrace{0}Symbol(self):
 
 Trace{0}Symbol = pyqtProperty(symbolMap,getTrace{0}Symbol,setTrace{0}Symbol,resetTrace{0}Symbol)
 
-def getTrace{0}Color(self):
-    return self.trace{0}Color
+def getTrace{0}Title(self):
+    return str(self.trace{0}Title)
 
-def setTrace{0}Color(self, color):
-    if self.trace{0}Color != color:
-        self.trace{0}Color = color
-        self.trace{0}.setPen(self.trace{0}Color,width=2)
+def setTrace{0}Title(self, value):
+    self.legendRemoveItem(self._t{0})
+    self.trace{0}Title = str(value)
+    if value:
+        self.legend.addItem(self.trace{0},self.trace{0}Title)
+        self._t{0} = self.legendGetAddedItem()
 
-Trace{0}Color = pyqtProperty(QColor,getTrace{0}Color,setTrace{0}Color)
+def resetTrace{0}Title(self):
+    self.setTrace{0}Title('Trace {0}')
+
+Trace{0}Title = pyqtProperty(str, getTrace{0}Title, setTrace{0}Title, resetTrace{0}Title)
 
 def getTrace{0}YAxisIndex(self):
     return self.trace{0}YAxisIndex
@@ -81,20 +96,6 @@ def setTrace{0}YAxisIndex(self,new_axis):
         # print(new_axis)
 
 Trace{0}YAxisIndex = pyqtProperty(int,getTrace{0}YAxisIndex,setTrace{0}YAxisIndex)
-
-def getTrace{0}Title(self):
-    return str(self.trace{0}Title)
-
-def setTrace{0}Title(self, value):
-    self.legendRemoveItem(self._t{0})
-    self.trace{0}Title = str(value)
-    self.legend.addItem(self.trace{0},self.trace{0}Title)
-    self._t{0} = self.legendGetAddedItem()
-
-def resetTrace{0}Title(self):
-    self.setTrace{0}Title('Trace {0}')
-
-Trace{0}Title = pyqtProperty(str, getTrace{0}Title, setTrace{0}Title, resetTrace{0}Title)
 '''
 
 
