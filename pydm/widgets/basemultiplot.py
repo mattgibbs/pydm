@@ -1,118 +1,81 @@
 from ..PyQt.QtGui import QColor, QBrush
-from ..PyQt.QtCore import pyqtSlot, pyqtProperty, Q_ENUMS
+from ..PyQt.QtCore import pyqtSlot, pyqtProperty, Q_ENUMS, Qt
 # from pyqtgraph import GraphicsLayoutWidget, PlotItem, AxisItem, PlotDataItem, ViewBox
 from pyqtgraph import PlotWidget, PlotItem, AxisItem, PlotDataItem, ViewBox, mkPen, mkBrush, LegendItem
 
-TRACES_PROPERTIES = '''
+TRACES_CONFIGS = '''
 @pyqtSlot(bool)
 def trace{0}setVisible(self,value):
+    self.trace[{0}].setVisible(value)
+    self._traceVisible[{0}] = value
+
+@pyqtProperty(QColor)
+def trace{0}Color(self):   return self._tracePen[{0}].color()
+@trace{0}Color.setter
+def trace{0}Color(self, color):
+    if self._tracePen[{0}].color() != color:
+        self._tracePen[{0}].setColor(color)
+        self.trace[{0}].setPen(self._tracePen[{0}])
+
+@pyqtProperty(lineStyleMap)
+def trace{0}LineSytle(self):          return self.linestyledict[self._tracePen[{0}].style()]
+@trace{0}LineSytle.setter
+def trace{0}LineStyle(self,value):    self._tracePen[{0}].setStyle(self.linestyledict[value])
+
+@pyqtProperty(symbolMap)
+def trace{0}Symbol(self):        return self._traceSymbol[{0}]
+@trace{0}Symbol.setter
+def trace{0}Symbol(self,value):
+    color = self._tracePen[{0}].color()
+    self.trace[{0}].setSymbol(self.symboldict[value])
+    self.trace[{0}].setSymbolPen(color)
+    self.trace[{0}].setSymbolBrush(color)
+    self.trace[{0}].setSymbolSize(8)
+    self._traceSymbol[{0}] = value
+
+@pyqtProperty(str)
+def trace{0}Title(self):     return str(self._traceTitle[{0}])
+@trace{0}Title.setter
+def trace{0}Title(self, value):
+    self.legendRemoveItem(self._legendEntry[{0}])
+    self._traceTitle[{0}] = str(value)
     if value:
-        self.trace{0}.setPen(self.trace{0}Color,width=2)
-        self.trace{0}.setSymbol(self.symboldict[self.trace{0}Symbol])
-        self.trace{0}.setSymbolPen(self.trace{0}Color)
-        self.trace{0}.setSymbolBrush(self.trace{0}Color)
-        self.trace{0}.setSymbolSize(8)
-    else:
-        self.trace{0}.setPen(None)
-        self.trace{0}.setSymbol(None)
-    self.trace{0}Visible = value
+        self.legend.addItem(self.trace[{0}],str(value))
+        self._legendEntry[{0}] = self.legendGetAddedItem()
 
-@pyqtSlot(bool)
-def trace{0}toggle_line_scatter(self,value):
-    if self.trace{0}Visible:
-        if value:
-            self.trace{0}.setPen(self.trace{0}Color,width=2)
-            self.trace{0}.setSymbol(None)
-        else:
-            self.trace{0}.setPen(None)
-            self.trace{0}.setSymbol(self.symboldict[1])
-            self.trace{0}.setSymbolPen(self.trace{0}Color)
-            self.trace{0}.setSymbolBrush(self.trace{0}Color)
-            self.trace{0}.setSymbolSize(8)
-
-def getTrace{0}Color(self):
-    return self.trace{0}Color
-
-def setTrace{0}Color(self, color):
-    if self.trace{0}Color != color:
-        self.trace{0}Color = color
-        self.trace{0}.setPen(self.trace{0}Color,width=2)
-
-Trace{0}Color = pyqtProperty(QColor,getTrace{0}Color,setTrace{0}Color)
-
-def getTrace{0}Interpolate(self):
-    return self.trace{0}Interpolate
-
-def setTrace{0}Interpolate(self,value):
-    if value:
-        self.trace{0}.setPen(self.trace{0}Color,width=2)
-    else:
-        self.trace{0}.setPen(None)
-    self.trace{0}Interpolate = value
-
-def resetTrace{0}Interpolate(self):
-    self.setTrace{0}Interpolate(True)
-
-Trace{0}Interpolate = pyqtProperty(bool,getTrace{0}Interpolate,setTrace{0}Interpolate,resetTrace{0}Interpolate)
-
-def getTrace{0}Symbol(self):
-    return self.trace{0}Symbol
-
-def setTrace{0}Symbol(self,value):
-    self.trace{0}.setSymbol(self.symboldict[value])
-    self.trace{0}.setSymbolPen(self.trace{0}Color)
-    self.trace{0}.setSymbolBrush(self.trace{0}Color)
-    self.trace{0}.setSymbolSize(8)
-    self.trace{0}Symbol = value
-
-def resetTrace{0}Symbol(self):
-    self.setTrace{0}Symbol(0)
-
-Trace{0}Symbol = pyqtProperty(symbolMap,getTrace{0}Symbol,setTrace{0}Symbol,resetTrace{0}Symbol)
-
-def getTrace{0}Title(self):
-    return str(self.trace{0}Title)
-
-def setTrace{0}Title(self, value):
-    self.legendRemoveItem(self._t{0})
-    self.trace{0}Title = str(value)
-    if value:
-        self.legend.addItem(self.trace{0},self.trace{0}Title)
-        self._t{0} = self.legendGetAddedItem()
-
-def resetTrace{0}Title(self):
-    self.setTrace{0}Title('Trace {0}')
-
-Trace{0}Title = pyqtProperty(str, getTrace{0}Title, setTrace{0}Title, resetTrace{0}Title)
-
-def getTrace{0}YAxisIndex(self):
-    return self.trace{0}YAxisIndex
-
-def setTrace{0}YAxisIndex(self,new_axis):
+@pyqtProperty(int)
+def trace{0}YAxisIndex(self):       return self._traceYAxisIndex[{0}]
+@trace{0}YAxisIndex.setter
+def trace{0}YAxisIndex(self,new_axis):
     if new_axis in [1,2,3]:
-        self._plotIndex[self.trace{0}YAxisIndex].removeItem(self.trace{0})
-        self._plotIndex[new_axis].addItem(self.trace{0})
-        self.trace{0}YAxisIndex = new_axis
-        # print(new_axis)
-
-Trace{0}YAxisIndex = pyqtProperty(int,getTrace{0}YAxisIndex,setTrace{0}YAxisIndex)
+        self._plotIndex[self._traceYAxisIndex[{0}]].removeItem(self.trace[{0}])
+        self._plotIndex[new_axis].addItem(self.trace[{0}])
+        self.trace[{0}].setVisible(self._traceVisible[{0}])
+        self._traceYAxisIndex[{0}] = new_axis
 '''
-
 
 SYMBOLS = {'NoSymbol' : 0, 'Circle' : 1,   'Square' : 2,  'Triangle' : 3,
            'Star' : 4,     'Pentagon' : 5, 'Hexagon' : 6, 'X' : 7,
            'Cross' : 8,    'Diamond' : 9}
-
+LINESTYLES = {'NoLine':0, 'Solid':1,  'Dash':2,  'Dot':3, 'DashDot':4,  'DashDotDot':5}
 class BaseMultiPlot(PlotWidget):
     MAX_NUM_TRACES = 15
 
     #symbolMap
     locals().update(**SYMBOLS)
+    locals().update(**LINESTYLES)
+
+    class lineStyleMap:
+        locals().update(**LINESTYLES)
 
     class symbolMap:
         locals().update(**SYMBOLS)
 
     Q_ENUMS(symbolMap)
+    Q_ENUMS(lineStyleMap)
+
+    linestyledict = {NoLine:Qt.NoPen, Solid:Qt.SolidLine, Dash:Qt.DashLine, Dot:Qt.DotLine,
+                     DashDot:Qt.DashDotLine, DashDotDot:Qt.DashDotDotLine}
 
     symboldict = { NoSymbol:None, Circle:'o',   Square:'s',  Triangle:'t',
                    Star:'star',   Pentagon:'p', Hexagon:'h', X:'x',
@@ -188,21 +151,22 @@ class BaseMultiPlot(PlotWidget):
                    QColor(102,0,0),   QColor(0,102,0),   QColor(0,0,102) ]
 
         #Traces' Properties
+        self.trace            = self.MAX_NUM_TRACES*[None]
+        self._traceTitle      = self.MAX_NUM_TRACES*[None]
+        self._tracePen        = self.MAX_NUM_TRACES*[None]
+        self._traceYAxisIndex = self.MAX_NUM_TRACES*[1]
+        self._traceSymbol     = self.MAX_NUM_TRACES*[0]
+        self._traceVisible    = self.MAX_NUM_TRACES*[True]
+        self._legendEntry     = self.MAX_NUM_TRACES*[None]
         for i in range(self.MAX_NUM_TRACES):
-            tr = 'trace'+str(i)
-            setattr(self,tr + 'Color', colors[i])
-            setattr(self,tr + 'Title', 'Trace '+ str(i))
-            setattr(self,tr, PlotDataItem(pen=mkPen(colors[i],width=2), symbol=None, name='Trace'+str(i)))
-            setattr(self,tr + 'YAxisIndex', 1)
-            setattr(self,tr + 'Interpolate', True)
-            setattr(self,tr + 'Symbol', 0)
-            setattr(self,tr + 'Visible', True)
+            self._traceTitle[i] = 'Trace '+ str(i)
+            self._tracePen[i] = mkPen(colors[i],width=2)
+            self.trace[i] =  PlotDataItem(pen=self._tracePen[i], symbol=None, name=self._traceTitle[i])
 
         #Initiate just trace0
-        self.plotItem.addItem(self.trace0)
-        self.legend.addItem(self.trace0,self.trace0Title)
-        self._t0 = self.legendGetAddedItem()
-
+        self.plotItem.addItem(self.trace[0])
+        self.legend.addItem(self.trace[0],self._traceTitle[0])
+        self._legendEntry[0] = self.legendGetAddedItem()
 
         self._title = None
         self._auto_range_XAxis = None
@@ -227,7 +191,6 @@ class BaseMultiPlot(PlotWidget):
     #count properties
     def getYAxisCount(self):
         return self._yAxisCount
-
     def setYAxisCount(self,value):
         if value >= 1 and value <= 4:
             if self._yAxisCount < 2 and value >= 2:
@@ -244,226 +207,174 @@ class BaseMultiPlot(PlotWidget):
                 self._axisIndex.remove(self._YAxis3)
             self._yAxisCount = value
             # print(value)
-
     def resetYAxisCount(self):
         self.setYAxisCount(1)
-
     yAxisCount = pyqtProperty(int,getYAxisCount,setYAxisCount,resetYAxisCount)
-
-    def getTracesCount(self):
-        return self._traceCount
-
-    def setTracesCount(self,value):
-        ## proposed code
-        if not (1 <= value <= self.MAX_NUM_TRACES): return
-        old_val = self._traceCount
-        self._traceCount = value
-        if old_val < value:
-            for i in range(old_val,value):
-                v = str(i)
-                attr_trYAxInd = getattr(self,'trace'+v+'YAxisIndex')
-                attr_tr = getattr(self,'trace'+v)
-                attr_trTt = getattr(self,'trace'+v+'Title')
-                self._plotIndex[attr_trYAxInd].addItem(attr_tr)
-                self.legend.addItem(attr_tr,attr_trTt)
-                setattr(self,'_t'+v, self.legendGetAddedItem())
-        else:
-            for i in range(value,old_val):
-                v = str(i)
-                attr_trYAxInd = getattr(self,'trace'+v+'YAxisIndex')
-                attr_tr = getattr(self,'trace'+v)
-                attr_ti = getattr(self,'_t'+v)
-                self._plotIndex[attr_trYAxInd].removeItem(attr_tr)
-                self.legendRemoveItem(attr_ti)
-
-    def resetTracesCount(self):
-        self.setTracesCount(1)
-
-    tracesCount = pyqtProperty(int,getTracesCount,setTracesCount,resetTracesCount)
 
     #Plot properties
     def getAutoRangeXAxis(self):
         return self._auto_range_XAxis
-
     def setAutoRangeXAxis(self, value):
         self._auto_range_XAxis = value
         self.plotItem.enableAutoRange(ViewBox.XAxis,enable=self._auto_range_XAxis)
-
     def resetAutoRangeXAxis(self):
         self.setAutoRangeXAxis(True)
-
     autoRangeXAxis = pyqtProperty("bool", getAutoRangeXAxis, setAutoRangeXAxis, resetAutoRangeXAxis)
 
     def getAutoRangeYAxis(self):
         return self._auto_range_YAxis
-
     def setAutoRangeYAxis(self, value):
         self._auto_range_YAxis = value
         self.plotItem.enableAutoRange(ViewBox.YAxis,enable=self._auto_range_YAxis)
-
     def resetAutoRangeYAxis(self):
         self.setAutoRangeYAxis(True)
-
     autoRangeYAxis = pyqtProperty("bool", getAutoRangeYAxis, setAutoRangeYAxis, resetAutoRangeYAxis)
 
     def getShowXGrid(self):
         return self._show_x_grid
-
     def setShowXGrid(self, value):
         self._show_x_grid = value
         self.showGrid(x=self._show_x_grid)
-
     def resetShowXGrid(self):
         self.setShowXGrid(False)
-
     showXGrid = pyqtProperty("bool", getShowXGrid, setShowXGrid, resetShowXGrid)
 
     def getShowYGrid(self):
         return self._show_y_grid
-
     def setShowYGrid(self, value):
         self._show_y_grid = value
         self.showGrid(y=self._show_y_grid)
-
     def resetShowYGrid(self):
         self.setShowYGrid(False)
-
     showYGrid = pyqtProperty("bool", getShowYGrid, setShowYGrid, resetShowYGrid)
 
     def getBackgroundColor(self):
         return self.backgroundBrush().color()
-
     def setBackgroundColor(self, color):
         if self.backgroundBrush().color() != color:
                 self.setBackgroundBrush(QBrush(color))
-
     backgroundColor = pyqtProperty(QColor, getBackgroundColor, setBackgroundColor)
 
     def getAxisColor(self):
         return self.getAxis('bottom')._pen.color()
-
     def setAxisColor(self, color):
         if self.getAxis('bottom')._pen.color() != color:
             self.getAxis('bottom').setPen(color)
             self.getAxis('left').setPen(color)
             self.getAxis('top').setPen(color)
             self.getAxis('right').setPen(color)
-
     axisColor = pyqtProperty(QColor, getAxisColor, setAxisColor)
 
     def getPlotTitle(self):
         return str(self._title)
-
     def setPlotTitle(self, value):
         self._title = str(value)
         self.setTitle(self._title)
-
     def resetPlotTitle(self):
         self._title = None
         self.setTitle(self._title)
-
     title = pyqtProperty(str, getPlotTitle, setPlotTitle, resetPlotTitle)
 
     def getShowLegend(self):
         return self._showLegend
-
     def setShowLegend(self, value):
         self._showLegend = value
         self.legend.setVisible(value)
-
     def resetShowLegend(self):
         self.setShowLegend(True)
-
     showLegend = pyqtProperty("bool", getShowLegend, setShowLegend, resetShowLegend)
 
     #Axis' properties
     def getXAxis1Label(self):
         return self._XAxis1Label
-
     def setXAxis1Label(self, label):
         self._XAxis1Label = label
         self.plotItem.getAxis('bottom').setLabel(self._XAxis1Label)
-
     XAxis1Label = pyqtProperty(str,getXAxis1Label,setXAxis1Label)
 
     def getXAxis1ShowLabel(self):
         return self._XAxis1ShowLabel
-
     def setXAxis1ShowLabel(self, showLabel):
         self._XAxis1ShowLabel = showLabel
         self.plotItem.getAxis('bottom').showLabel(showLabel)
-
     def resetXAxis1ShowLabel(self):
         self.plotItem.getAxis('bottom').showLabel(False)
-
     XAxis1ShowLabel = pyqtProperty(bool,getXAxis1ShowLabel,setXAxis1ShowLabel)
 
     def getYAxis1Label(self):
         return self._YAxis1Label
-
     def setYAxis1Label(self, label):
         self._YAxis1Label = label
         self.plotItem.getAxis('left').setLabel(self._YAxis1Label)
-
     YAxis1Label = pyqtProperty(str,getYAxis1Label,setYAxis1Label)
 
     def getYAxis1ShowLabel(self):
         return self._YAxis1ShowLabel
-
     def setYAxis1ShowLabel(self, showLabel):
         self._YAxis1ShowLabel = showLabel
         self.plotItem.getAxis('left').showLabel(showLabel)
-
     def resetYAxis1ShowLabel(self):
         self.plotItem.getAxis('left').showLabel(False)
-
     YAxis1ShowLabel = pyqtProperty(bool,getYAxis1ShowLabel,setYAxis1ShowLabel,resetYAxis1ShowLabel)
 
     def getYAxis2Label(self):
         return self._YAxis2Label
-
     def setYAxis2Label(self, label):
         self._YAxis2Label = label
         self.plotItem.getAxis('right').setLabel(self._YAxis2Label)
-
     YAxis2Label = pyqtProperty(str,getYAxis2Label,setYAxis2Label)
 
     def getYAxis2ShowLabel(self):
         return self._YAxis2ShowLabel
-
     def setYAxis2ShowLabel(self, showLabel):
         self._YAxis2ShowLabel = showLabel
         self.plotItem.getAxis('right').showLabel(showLabel)
-
     def resetYAxis2ShowLabel(self):
         self.plotItem.getAxis('right').showLabel(False)
-
     YAxis2ShowLabel = pyqtProperty(bool,getYAxis2ShowLabel,setYAxis2ShowLabel,resetYAxis2ShowLabel)
 
     def getYAxis3Label(self):
         return self._YAxis3Label
-
     def setYAxis3Label(self, label):
         self._YAxis3Label = label
         self._YAxis3.setLabel(self._YAxis3Label)
-
     YAxis3Label = pyqtProperty(str,getYAxis3Label,setYAxis3Label)
 
     def getYAxis3ShowLabel(self):
         return self._YAxis3ShowLabel
-
     def setYAxis3ShowLabel(self, showLabel):
         self._YAxis3ShowLabel = showLabel
         self._YAxis3.showLabel(showLabel)
-
     def resetYAxis3ShowLabel(self):
         self._YAxis3.showLabel(False)
-
     YAxis3ShowLabel = pyqtProperty(bool,getYAxis3ShowLabel,setYAxis3ShowLabel,resetYAxis3ShowLabel)
 
-    #Traces' properties
+    ############################ TRACES PROPERTIES #################################
+    @pyqtProperty(int)
+    def tracesCount(self):     return self._traceCount
+    @tracesCount.setter
+    def tracesCount(self,value):
+        value = min(max(value,1),self.MAX_NUM_TRACES)
+        old_val = self._traceCount
+        self._traceCount = value
+        if old_val < value:
+            for i in range(old_val,value):
+                trYAxInd = self._traceYAxisIndex[i]
+                tr   = self.trace[i]
+                trTt = self._traceTitle[i]
+                self._plotIndex[trYAxInd].addItem(tr)
+                tr.setVisible(self._traceVisible[i])
+                self.legend.addItem(tr,trTt)
+                self._legendEntry[i] = self.legendGetAddedItem()
+        else:
+            for i in range(value,old_val):
+                trYAxInd = self._traceYAxisIndex[i]
+                self._plotIndex[trYAxInd].removeItem(self.trace[i])
+                self.legendRemoveItem(self._legendEntry[i])
+
+    ######## Individual Traces Properties ###########
     for i in range(MAX_NUM_TRACES):
-        exec(TRACES_PROPERTIES.format(i))
+        exec(TRACES_CONFIGS.format(i))
 
     #Legend complementary methods
     def legendGetAddedItem(self):

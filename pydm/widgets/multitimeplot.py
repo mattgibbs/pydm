@@ -8,26 +8,6 @@ from .channel import PyDMChannel
 TRACES_CONFIGS = '''
 trace{0}_receive_value = pyqtSignal([float],[int])
 
-def Trace{0}InitializeBuffer(self,keep=False,oldsize=0,newsize=0):
-    increase = (oldsize < newsize)
-    if keep:
-        if increase:
-            for i in range(newsize-oldsize):
-                self.trace{0}_data_buffer = _np.insert(self.trace{0}_data_buffer,0,0,axis=1)
-        else:
-            for i in range(oldsize-newsize):
-                self.trace{0}_data_buffer = _np.delete(self.trace{0}_data_buffer,0,axis=1)
-            if self.trace{0}_points_accumulated > newsize:
-                self.trace{0}_points_accumulated = newsize
-    else:
-        self.trace{0}_points_accumulated = 0
-        self.trace{0}_data_buffer = _np.zeros((2,self._trace{0}_buffer_size), order='f',dtype=float)
-        self.trace{0}_data_buffer[1].fill(_time.time())
-
-def Trace{0}RedrawPlot(self):
-    self.trace{0}.setData(y=self.trace{0}_data_buffer[0,-self.trace{0}_points_accumulated:],
-                          x=self.trace{0}_data_buffer[1,-self.trace{0}_points_accumulated:])
-
 # def getTrace{0}UpdatesAsynchronously(self):
 #     return self._update_mode == self.AsynchronousMode
 #
@@ -49,19 +29,19 @@ def Trace{0}RedrawPlot(self):
 #                                              resetTrace{0}UpdatesAsynchronously )
 
 def getTrace{0}BufferSize(self):
-    return self._trace{0}_buffer_size
+    return self._trace_buffer_size[{0}]
 
 @pyqtSlot(int)
 @pyqtSlot(str)
 def setTrace{0}BufferSize(self, value):
-    if self._trace{0}_buffer_size != int(value):
-        self.Trace{0}InitializeBuffer(True,self._trace{0}_buffer_size,int(value))
-        self._trace{0}_buffer_size = max(int(value),1)
+    if self._trace_buffer_size[{0}] != int(value):
+        self.initializeBuffer({0},True,self._trace_buffer_size[{0}],int(value))
+        self._trace_buffer_size[{0}] = max(int(value),1)
 
 def resetTrace{0}BufferSize(self):
-    if self._trace{0}_buffer_size != 100:
-        self.Trace{0}InitializeBuffer(True,self._trace{0}_buffer_size,100)
-        self._trace{0}_buffer_size = 100
+    if self._trace_buffer_size[{0}] != 100:
+        self.initializeBuffer({0},True,self._trace_buffer_size[{0}],100)
+        self._trace_buffer_size[{0}] = 100
 
 trace{0}BufferSize = pyqtProperty("int", getTrace{0}BufferSize,
                                   setTrace{0}BufferSize,
@@ -87,24 +67,24 @@ def Trace{0}ConnectionStateChanged(self, connected):
 def Trace{0}ReceiveNewValue(self, new_value):
     self.trace{0}_receive_value.emit(new_value)
     if self._update_mode == self.SynchronousMode:
-        self.trace{0}_data_buffer = _np.roll(self.trace{0}_data_buffer,-1)
-        self.trace{0}_data_buffer[0,self._trace{0}_buffer_size - 1] = new_value
-        self.trace{0}_data_buffer[1,self._trace{0}_buffer_size - 1] = _time.time()
-        if self.trace{0}_points_accumulated < self._trace{0}_buffer_size:
-            self.trace{0}_points_accumulated = self.trace{0}_points_accumulated + 1
+        self._trace_data_buffer[{0}] = _np.roll(self._trace_data_buffer[{0}],-1)
+        self._trace_data_buffer[{0}][0,self._trace_buffer_size[{0}] - 1] = new_value
+        self._trace_data_buffer[{0}][1,self._trace_buffer_size[{0}] - 1] = _time.time()
+        if self._trace_points_accumulated[{0}] < self._trace_buffer_size[{0}]:
+            self._trace_points_accumulated[{0}] = self._trace_points_accumulated[{0}] + 1
     # elif self._update_mode == self.AsynchronousMode:
     #     self.latest_value = new_value
 
 def getTrace{0}Channel(self):
-    return str(self._trace{0}_channel)
+    return str(self._trace_channel[{0}])
 
 def setTrace{0}Channel(self, value):
-    if self._trace{0}_channel != value:
-        self._trace{0}_channel = str(value)
+    if self._trace_channel[{0}] != value:
+        self._trace_channel[{0}] = str(value)
 
 def resetTrace{0}Channel(self):
-    if self._trace{0}_channel != None:
-        self._trace{0}_channel = None
+    if self._trace_channel[{0}] != None:
+        self._trace_channel[{0}] = None
 
 trace{0}Channel = pyqtProperty(str, getTrace{0}Channel, setTrace{0}Channel, resetTrace{0}Channel)
 '''
@@ -123,17 +103,20 @@ class PyDMMultiTimePlot(BaseMultiPlot):
         #Redraw Configurations
         self.redraw_timer = QTimer(self)
         self.redraw_timer.setInterval(20) #miliseconds
-        self.redraw_timer.timeout.connect(self.redrawPlot)
+        self.redraw_timer.timeout.connect(self.redrawPlots)
 
         #Plot Configurations
         self._update_mode = PyDMMultiTimePlot.SynchronousMode
         self._time_span = 10.0           #This is in seconds
         # self.plotItem.disableAutoRange(ViewBox.XAxis)
 
+        self._trace_buffer_size         = self.MAX_NUM_TRACES*[100]
+        self._trace_channel             = self.MAX_NUM_TRACES*[None]
+        self._trace_data_buffer         = self.MAX_NUM_TRACES*[None]
+        self._traces_connected          = self.MAX_NUM_TRACES*[False]
+        self._trace_points_accumulated  = self.MAX_NUM_TRACES*[0]
         for i in range(self.MAX_NUM_TRACES):
-            setattr(self,'_trace'+str(i)+'_buffer_size', 100)
-            setattr(self, '_trace'+str(i)+'_channel',None)
-            getattr(self,'Trace'+str(i)+'InitializeBuffer')()
+            self.initializeBuffer(i)
 
         self._traces_connected = self.MAX_NUM_TRACES * [False]
         self._trace0_channel = init_trace0_channel
@@ -142,6 +125,32 @@ class PyDMMultiTimePlot(BaseMultiPlot):
         #AsynchronousMode Configurations
         # self.update_timer = QTimer(self)
         # self._update_interval = 100     #This is in miliseconds
+
+    def initializeBuffer(self,ind,keep=False,oldsize=0,newsize=0):
+        increase = (oldsize < newsize)
+        if keep:
+            if increase:
+                for i in range(newsize-oldsize):
+                    self._trace_data_buffer[ind] = _np.insert(self._trace_data_buffer[ind],0,0,axis=1)
+            else:
+                for i in range(oldsize-newsize):
+                    self._trace_data_buffer[ind] = _np.delete(self._trace_data_buffer[ind],0,axis=1)
+                if self._trace_points_accumulated[ind] > newsize:
+                    self._trace_points_accumulated[ind] = newsize
+        else:
+            self._trace_points_accumulated[ind] = 0
+            self._trace_data_buffer[ind] = _np.zeros((2,self._trace_buffer_size[ind]), order='f',dtype=float)
+            self._trace_data_buffer[ind][1].fill(_time.time())
+
+    def redrawPlot(self,ind):
+        self.trace[ind].setData(y=self._trace_data_buffer[ind][0,-self._trace_points_accumulated[ind]:],
+                                x=self._trace_data_buffer[ind][1,-self._trace_points_accumulated[ind]:]  )
+
+    def redrawPlots(self):
+        self.updateXAxis()
+        for i in range(self._traceCount):
+            if self._traces_connected[i]:
+                self.redrawPlot(i)
 
     #Traces' properties
     for i in range(BaseMultiPlot.MAX_NUM_TRACES):
@@ -196,18 +205,10 @@ class PyDMMultiTimePlot(BaseMultiPlot):
     def updateXAxis(self, update_immediately=False):
         maxrange = _time.time()
         if self._update_mode == self.SynchronousMode:
-            str_ = 'trace{0}_data_buffer'
-            vals = [getattr(self,str_.format(i))[1,-1] for i in range(self.MAX_NUM_TRACES)]
+            vals = [self._trace_data_buffer[i][1,-1] for i in range(self.MAX_NUM_TRACES)]
             maxrange = max(vals)
         minrange = (maxrange - self._time_span)
         self.plotItem.setXRange(minrange,maxrange,padding=0.0,update=update_immediately)
-
-    def redrawPlot(self):
-        self.updateXAxis()
-        for i in range(self._traceCount):
-            if self._traces_connected[i]:
-                attr_ = getattr('Trace{0}redrawPlot'.format(i))
-                attr_()
 
     def channels(self):
         if self._channels is None:

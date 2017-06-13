@@ -9,23 +9,10 @@ TRACES_CONFIGS = '''
 trace{0}_receive_waveform = pyqtSignal(_np.ndarray)
 trace{0}_receive_value    = pyqtSignal([float],[int],[str],[_np.ndarray])
 
-def Trace{0}RedrawPlot(self):
-    datax = self._x_data
-    datay = self.trace{0}_data
-    if datay is None: return
-    if datax is None: datax = _np.arange(1,len(datay)+1)
-    if len(datay)==1: datay = datay*_np.ones(len(datax))
-    if self._allow_size_mismatch:
-        min_  = min([len(datay),len(datax)])
-        datay = datay[:min_]
-        datax = datax[:min_]
-    if len(datay) != len(datax): return
-    self.trace{0}.setData(y=datay*self._trace{0}_scale, x=datax)
-
 @pyqtSlot(_np.ndarray)
 def setTrace{0}Waveform(self, new_value):
     self.trace{0}_receive_waveform.emit(new_value)
-    self.trace{0}_data = new_value
+    self._trace_data[{0}] = new_value
 
 @pyqtSlot(int)
 @pyqtSlot(float)
@@ -33,29 +20,27 @@ def setTrace{0}Waveform(self, new_value):
 @pyqtSlot(_np.ndarray)
 def setTrace{0}Value(self, new_value):
     self.trace{0}_receive_value.emit(new_value)
-    self.trace{0}_data = _np.array([float(new_value)])
+    self._trace_data[{0}] = _np.array([float(new_value)])
 
 @pyqtProperty(str)
-def trace{0}Channel(self):
-    return str(self._trace{0}_channel)
+def trace{0}Channel(self):    return str(self._trace_channel[{0}])
 @trace{0}Channel.setter
 def trace{0}Channel(self, value):
-    if self._trace{0}_channel != value:
-        self._trace{0}_channel = str(value)
+    if self._trace_channel[{0}] != value:
+        self._trace_channel[{0}] = str(value)
 
 @pyqtSlot(int)
 @pyqtSlot(float)
 @pyqtSlot(str)
 def setTrace{0}Scale(self,new_value):
-    self._trace{0}_scale = float(new_value)
+    self._trace_scale[{0}] = float(new_value)
 
 @pyqtProperty(float)
-def trace{0}Scale(self):
-    return float(self._trace{0}_scale)
+def trace{0}Scale(self):    return float(self._trace_scale[{0}])
 @trace{0}Scale.setter
 def trace{0}Scale(self, value):
-    if self._trace{0}_scale != float(value):
-        self._trace{0}_scale = float(value)
+    if self._trace_scale[{0}] != float(value):
+        self._trace_scale[{0}] = float(value)
 '''
 
 class PyDMMultiWaveformPlot(BaseMultiPlot):
@@ -72,16 +57,15 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
         #Redraw Configurations
         self.redraw_timer = QTimer(self)
         self.redraw_timer.setInterval(20) #miliseconds
-        self.redraw_timer.timeout.connect(self.redrawPlot)
+        self.redraw_timer.timeout.connect(self.redrawPlots)
 
         self._channels = None
         self._allow_size_mismatch = True
 
-        for i in range(self.MAX_NUM_TRACES):
-            setattr(self, '_trace'+str(i)+'_channel',None)
-            setattr(self, '_trace'+str(i)+'_data',None)
-            setattr(self, '_trace'+str(i)+'_scale',1)
-        self._trace0_channel = init_trace0_channel
+        self._trace_channel = self.MAX_NUM_TRACES*[None]
+        self._trace_data    = self.MAX_NUM_TRACES*[None]
+        self._trace_scale   = self.MAX_NUM_TRACES*[1]
+        self._trace_channel[0] = init_trace0_channel
 
         self._x_channel = None
         self._x_data    = None
@@ -123,10 +107,19 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
         if self._x_channel != value:
             self._x_channel = str(value)
 
-    def redrawPlot(self):
+    def redrawPlots(self):
         for i in range(self._traceCount):
-            attr_ = getattr('Trace{0}redrawPlot'.format(i))
-            attr_()
+            datax = self._x_data
+            datay = self._trace_data[i]
+            if datay is None: return
+            if datax is None: datax = _np.arange(1,len(datay)+1)
+            if len(datay)==1: datay = datay*_np.ones(len(datax))
+            if self._allow_size_mismatch:
+                min_  = min([len(datay),len(datax)])
+                datay = datay[:min_]
+                datax = datax[:min_]
+            if len(datay) != len(datax): return
+            self.trace[i].setData(y=datay*self._trace_scale[i], x=datax)
 
     def channels(self):
         if self._channels is None:
