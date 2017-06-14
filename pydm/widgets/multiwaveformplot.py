@@ -119,7 +119,7 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
                 datay = datay[:min_]
                 datax = datax[:min_]
             if len(datay) != len(datax): return
-            self.trace[i].setData(y=datay*self._trace_scale[i], x=datax)
+            self.trace[i].setData(y=datay*self._trace_scale[i], x=datax, connect="finite")
 
     def channels(self):
         if self._channels is None:
