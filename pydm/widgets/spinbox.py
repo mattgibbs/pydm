@@ -16,6 +16,7 @@ class PyDMSpinBox(QDoubleSpinBox):
         self.setAlignment(alignment)
         self.setSingleStep(step or 10)
         self.setDecimals(precision)
+        self.setEnabled(False)
 
         self._limits_from_pv = False
         self._connected = False
@@ -35,9 +36,11 @@ class PyDMSpinBox(QDoubleSpinBox):
     def connectionStateChanged(self, connected):
         self._connected = connected
         if connected:
+            self.setEnabled(True)
             self.connected_signal.emit()
         else:
             self.disconnected_signal.emit()
+            self.setEnabled(False)
 
     @pyqtSlot(float)
     @pyqtSlot(int)

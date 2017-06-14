@@ -29,6 +29,7 @@ class PyDMLineEdit(QLineEdit):
 
         self._useprec    = True
         self._prec       = None
+        self._connected  =False
 
         self._userformat = None
 
@@ -37,6 +38,7 @@ class PyDMLineEdit(QLineEdit):
         self._useunits   = True
         self._units      = None
         self._unitformat = None
+        self.setEnabled(False)
 
         self.returnPressed.connect(self.sendValue)
 
@@ -175,6 +177,18 @@ class PyDMLineEdit(QLineEdit):
 
         self.send_value_signal[self._channeltype].emit(self._channeltype(send_value))
 
+    @pyqtSlot(bool)
+    def connectionChanged(self, conn):
+        """
+        Change the PyDMLineEdit to read only if write access is denied
+        """
+        self._connected = conn
+        if conn:
+            self.connected_signal.emit()
+            self.setEnabled(True)
+        else:
+            self.disconnected_signal.emit()
+            self.setEnabled(False)
 
     @pyqtSlot(bool)
     def writeAccessChanged(self, write_access):
@@ -314,6 +328,7 @@ class PyDMLineEdit(QLineEdit):
         return [PyDMChannel(address=self.channel,
                             value_slot=self.receiveValue,
                             value_signal=self.send_value_signal,
+                            connection_slot=selt.connectionChanged,
                             prec_slot = self.receivePrecision,
                             unit_slot = self.receiveUnits,
                             write_access_slot=self.writeAccessChanged,
