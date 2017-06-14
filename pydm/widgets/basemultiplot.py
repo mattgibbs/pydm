@@ -1,7 +1,10 @@
 from ..PyQt.QtGui import QColor, QBrush
 from ..PyQt.QtCore import pyqtSlot, pyqtProperty, Q_ENUMS, Qt
 # from pyqtgraph import GraphicsLayoutWidget, PlotItem, AxisItem, PlotDataItem, ViewBox
-from pyqtgraph import PlotWidget, PlotItem, AxisItem, PlotDataItem, ViewBox, mkPen, mkBrush, LegendItem
+from pyqtgraph import PlotWidget, PlotItem, AxisItem, PlotDataItem, ViewBox, mkPen, LegendItem, ColorMap
+import numpy as _np
+from pydm.widgets.colormaps import jet as default_cm
+
 
 TRACES_CONFIGS = '''
 @pyqtSlot(bool)
@@ -145,10 +148,10 @@ class BaseMultiPlot(PlotWidget):
         self.plotItem.vb.sigResized.connect(self.updateViews)
         self._plotIndex = [None,self.plotItem,self.viewBox2,self.viewBox3]
 
-        colors = [ QColor(255,0,0),   QColor(0,0,255),   QColor(0,255,0),   QColor(255,128,0),
-                   QColor(255,255,0), QColor(0,255,128), QColor(0,255,255), QColor(0,128,255),
-                   QColor(127,0,255), QColor(255,0,255), QColor(255,0,127), QColor(128,128,128),
-                   QColor(102,0,0),   QColor(0,102,0),   QColor(0,0,102) ]
+        sz = default_cm.shape[0]
+        pos = [i/(sz-1) for i in range(sz)]
+        cm = ColorMap(pos, default_cm)
+        colors = cm.mapToQColor(_np.linspace(0,1,self.MAX_NUM_TRACES))
 
         #Traces' Properties
         self.trace            = self.MAX_NUM_TRACES*[None]
