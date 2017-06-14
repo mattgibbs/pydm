@@ -20,17 +20,20 @@ class PyDMWidget(QWidget):
     ALARM_INVALID = 3
     ALARM_DISCONNECTED = 4
 
-    def __init__(self,parent=None,init_channel=None):
+    def __init__(self,parent=None,init_channel=None, visible=True):
         super(PyDMWidget,self).__init__(parent)
         self._channel = init_channel
         self._channels = None
         self._connected = False
+        self.value = None
+        self.setVisible(visible)
 
     @pyqtSlot(int)
     @pyqtSlot(float)
     @pyqtSlot(str)
     @pyqtSlot(_np.ndarray)
     def receiveValue(self, new_value):
+        self.value = new_value
         type_ = type(new_value)
         self.value_signal[type_].emit(new_value)
 
