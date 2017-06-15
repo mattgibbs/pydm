@@ -19,7 +19,8 @@ def setTrace{0}Waveform(self, new_value):
 @pyqtSlot(str)
 @pyqtSlot(_np.ndarray)
 def setTrace{0}Value(self, new_value):
-    self.trace{0}_receive_value.emit(new_value)
+    type_ = type(new_value)
+    self.trace{0}_receive_value[type_].emit(new_value)
     self._trace_data[{0}] = _np.array([float(new_value)])
 
 @pyqtProperty(str)
@@ -44,8 +45,6 @@ def trace{0}Scale(self, value):
 '''
 
 class PyDMMultiWaveformPlot(BaseMultiPlot):
-    SynchronousMode = 1
-    AsynchronousMode = 2
 
     def __init__(self, parent=None, init_trace0_channel=None, init_x_channel=None, background='default'):
         self._XAxis1 = AxisItem('bottom')
