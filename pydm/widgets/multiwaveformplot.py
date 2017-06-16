@@ -21,7 +21,9 @@ def setTrace{0}Waveform(self, new_value):
 def setTrace{0}Value(self, new_value):
     type_ = type(new_value)
     self.trace{0}_receive_value[type_].emit(new_value)
-    self._trace_data[{0}] = _np.array([float(new_value)])
+    if type_ != _np.ndarray:
+        new_value = _np.array([float(new_value)])
+    self._trace_data[{0}] = new_value
 
 @pyqtProperty(str)
 def trace{0}Channel(self):    return str(self._trace_channel[{0}])
@@ -95,8 +97,11 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
     @pyqtSlot(str)
     @pyqtSlot(_np.ndarray)
     def setXValue(self, new_value):
-        self.x_receive_value.emit(new_value)
-        self.x_data = _np.array([float(new_value)])
+        type_ = type(new_value)
+        self.x_receive_value[type_].emit(new_value)
+        if type_ != _np.ndarray:
+            new_value = _np.array([float(new_value)])
+        self._x_data = new_value
 
     @pyqtProperty(str)
     def XChannel(self):
