@@ -13,6 +13,7 @@ trace{0}_receive_value    = pyqtSignal([float],[int],[str],[_np.ndarray])
 def setTrace{0}Waveform(self, new_value):
     self.trace{0}_receive_waveform.emit(new_value)
     self._trace_data[{0}] = new_value
+    self.redrawPlot({0})
 
 @pyqtSlot(int)
 @pyqtSlot(float)
@@ -24,6 +25,7 @@ def setTrace{0}Value(self, new_value):
     if type_ != _np.ndarray:
         new_value = _np.array([float(new_value)])
     self._trace_data[{0}] = new_value
+    self.redrawPlot({0})
 
 @pyqtProperty(str)
 def trace{0}Channel(self):    return str(self._trace_channel[{0}])
@@ -55,11 +57,6 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
         self._axisItems = {'bottom': self._XAxis1, 'left': self._YAxis1, 'right': self._YAxis2}
         super(PyDMMultiWaveformPlot,self).__init__(parent=parent, background='default',axisItems=self._axisItems)
 
-        #Redraw Configurations
-        self.redraw_timer = QTimer(self)
-        self.redraw_timer.setInterval(20) #miliseconds
-        self.redraw_timer.timeout.connect(self.redrawPlots)
-
         self._channels = None
         self._allow_size_mismatch = True
 
@@ -79,6 +76,7 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
     def allowSizeMismatch(self, value):
         if self._allow_size_mismatch != value:
             self._allow_size_mismatch = bool(value)
+        for i in range(self._traceCount): self.redrawPlot(i)
 
     #YTraces' properties
     for i in range(BaseMultiPlot.MAX_NUM_TRACES):
@@ -91,6 +89,7 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
     def setXWaveform(self, new_value):
         self.x_receive_waveform.emit(new_value)
         self._x_data = new_value
+        for i in range(self._traceCount): self.redrawPlot(i)
 
     @pyqtSlot(int)
     @pyqtSlot(float)
@@ -102,6 +101,7 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
         if type_ != _np.ndarray:
             new_value = _np.array([float(new_value)])
         self._x_data = new_value
+        for i in range(self._traceCount): self.redrawPlot(i)
 
     @pyqtProperty(str)
     def XChannel(self):
@@ -111,19 +111,19 @@ class PyDMMultiWaveformPlot(BaseMultiPlot):
         if self._x_channel != value:
             self._x_channel = str(value)
 
-    def redrawPlots(self):
-        for i in range(self._traceCount):
-            datax = self._x_data
-            datay = self._trace_data[i]
-            if datay is None: return
-            if datax is None: datax = _np.arange(1,len(datay)+1)
-            if len(datay)==1: datay = datay*_np.ones(len(datax))
-            if self._allow_size_mismatch:
-                min_  = min([len(datay),len(datax)])
-                datay = datay[:min_]
-                datax = datax[:min_]
-            if len(datay) != len(datax): return
-            self.trace[i].setData(y=datay*self._trace_scale[i], x=datax, connect="finite")
+    def redrawPlot(self,ind):
+        if ind >= self._traceCount: return
+        datax = self._x_data
+        datay = self._trace_data[ind]
+        if datay is None: return
+        if datax is None: datax = _np.arange(1,len(datay)+1)
+        if len(datay)==1: datay = datay*_np.ones(len(datax))
+        if self._allow_size_mismatch:
+            min_  = min([len(datay),len(datax)])
+            datay = datay[:min_]
+            datax = datax[:min_]
+        if len(datay) != len(datax): return
+        self.trace[ind].setData(y=datay*self._trace_scale[ind], x=datax, connect="finite")
 
     def channels(self):
         if self._channels is None:
