@@ -367,13 +367,15 @@ class BaseMultiPlot(PlotWidget):
                 trTt = self._traceTitle[i]
                 self._plotIndex[trYAxInd].addItem(tr)
                 tr.setVisible(self._traceVisible[i])
-                self.legend.addItem(tr,trTt)
-                self._legendEntry[i] = self.legendGetAddedItem()
+                if trTt:
+                    self.legend.addItem(tr,trTt)
+                    self._legendEntry[i] = self.legendGetAddedItem()
         else:
             for i in range(value,old_val):
                 trYAxInd = self._traceYAxisIndex[i]
                 self._plotIndex[trYAxInd].removeItem(self.trace[i])
-                self.legendRemoveItem(self._legendEntry[i])
+                if self._legendEntry[i]:
+                    self.legendRemoveItem(self._legendEntry[i])
 
     ######## Individual Traces Properties ###########
     for i in range(MAX_NUM_TRACES):
