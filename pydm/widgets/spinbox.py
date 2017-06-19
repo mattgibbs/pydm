@@ -51,10 +51,10 @@ class PyDMSpinBox(QDoubleSpinBox):
     @pyqtSlot()
     def value_changed(self):
         ''' Emits a value changed signal '''
-        if self._connected:
-            if self.value() <= self.minimum():
+        if self._connected and self._channeltype is not None:
+            if self.value <= self.minimum():
                 self.value_changed_signal[self._channeltype].emit(self._channeltype(self.minimum()))
-            elif self.value() >= self.maximum():
+            elif self.value >= self.maximum():
                 self.value_changed_signal[self._channeltype].emit(self._channeltype(self.maximum()))
             else:
                 self.value_changed_signal[self._channeltype].emit(self._channeltype(self.value))

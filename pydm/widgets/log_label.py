@@ -36,6 +36,7 @@ class PyDMLogLabel(QListWidget):
         self._max_count = 1000
         self._prec = 0
         self.format_string = None
+        self.enum_strings = None
 
     @pyqtSlot(float)
     @pyqtSlot(int)
@@ -44,7 +45,7 @@ class PyDMLogLabel(QListWidget):
         if self.count() > self._max_count: self.clear()
         now_ = _datetime.datetime.now().strftime('%Y/%M/%d-%H:%M:%S')
         if self.enum_strings and isinstance(new_value, int):
-            new_value = enum_strings(new_value)
+            new_value = self.enum_strings[new_value]
         elif isinstance(new_value, float) and self.format_string:
             new_value = self.format_string.format(new_value)
         else:
