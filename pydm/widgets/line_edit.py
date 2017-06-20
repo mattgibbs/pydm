@@ -161,6 +161,7 @@ class PyDMLineEdit(QLineEdit):
         before being sent back to the channel. This function is attached the
         ReturnPressed signal of the PyDMLineEdit
         """
+        if self._channeltype is None: return
         send_value = str(self.text())
 
         #Clean text of all formatting
@@ -185,10 +186,9 @@ class PyDMLineEdit(QLineEdit):
         self._connected = conn
         if conn:
             self.connected_signal.emit()
-            self.setEnabled(True)
         else:
             self.disconnected_signal.emit()
-            self.setEnabled(False)
+        self.setEnabled(conn)
 
     @pyqtSlot(bool)
     def writeAccessChanged(self, write_access):
@@ -328,7 +328,7 @@ class PyDMLineEdit(QLineEdit):
         return [PyDMChannel(address=self.channel,
                             value_slot=self.receiveValue,
                             value_signal=self.send_value_signal,
-                            connection_slot=selt.connectionChanged,
+                            connection_slot=self.connectionChanged,
                             prec_slot = self.receivePrecision,
                             unit_slot = self.receiveUnits,
                             write_access_slot=self.writeAccessChanged,

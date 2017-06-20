@@ -35,36 +35,38 @@ class PyDMSpinBox(QDoubleSpinBox):
     @pyqtSlot(bool)
     def connectionStateChanged(self, connected):
         self._connected = connected
+        self.setEnabled(connected)
         if connected:
-            self.setEnabled(True)
             self.connected_signal.emit()
         else:
             self.disconnected_signal.emit()
-            self.setEnabled(False)
+
+    @pyqtSlot(str)
+    @pyqtSlot(int)
+    @pyqtSlot(float)
+    def receiveValue(self, value):
+        self._channeltype = type(value)
+        self.setValue(float(value))
+
+    @pyqtSlot(float)
+    def value_changed(self,value):
+        ''' Emits a value changed signal '''
+        if self._connected and self._channeltype is not None:
+            if value <= self.minimum():
+                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.minimum()))
+            elif value >= self.maximum():
+                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.maximum()))
+            else:
+                self.value_changed_signal[self._channeltype].emit(self._channeltype(value))
 
     @pyqtSlot(float)
     @pyqtSlot(int)
-    def receiveValue(self, value):
-        self._channeltype = type(value)
-        self.value = self._channeltype(value)
-
-    @pyqtSlot()
-    def value_changed(self):
-        ''' Emits a value changed signal '''
-        if self._connected and self._channeltype is not None:
-            if self.value <= self.minimum():
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.minimum()))
-            elif self.value >= self.maximum():
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.maximum()))
-            else:
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.value))
-
-    @pyqtSlot(float)
     def receiveLowerLimit(self, value):
-        if self._limits_from_pv: self.setMinimum(value)
+        if self._limits_from_pv: self.setMinimum(float(value))
     @pyqtSlot(float)
+    @pyqtSlot(int)
     def receiveUpperLimit(self, value):
-        if self._limits_from_pv: self.setMaximum(value)
+        if self._limits_from_pv: self.setMaximum(float(value))
     @pyqtSlot(int)
     def receivePrec(self, value):
         if self._limits_from_pv: self.setDecimals(int(value))
