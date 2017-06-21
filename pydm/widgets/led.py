@@ -21,10 +21,12 @@ class PyDMLed(QLed):
         self._enum_strings = None
         self._enum_map = enum_map
         self._count = None
+        self._isArray = False
 
         self._connected = False
         self._channels = None
         self._channel = init_channel
+        self.setEnabled(False)
 
     @pyqtProperty(int)
     def pvbit(self): return self._bit
@@ -44,6 +46,7 @@ class PyDMLed(QLed):
     @pyqtSlot(bool)
     def connectionStateChanged(self, connected):
         self._connected = connected
+        self.setEnabled(connected)
         if connected:
             self.connected_signal.emit()
         else:
@@ -72,7 +75,8 @@ class PyDMLed(QLed):
 
     @pyqtSlot(_np.ndarray)
     def receiveWaveform(self,value):
-        if self._bit < 0 or self._count is None: return
+        self._isArray = True
+        if self._bit < 0: return
         if self._bit >= self._count: return
         self.setValue(1   if value[self._bit] else   0)
 

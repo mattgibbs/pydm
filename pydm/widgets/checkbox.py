@@ -4,9 +4,7 @@ from ..PyQt.QtCore import pyqtSignal, pyqtSlot, pyqtProperty, QState, QStateMach
 from .channel import PyDMChannel
 
 class PyDMCheckbox(QCheckBox):
-    __pyqtSignals__ = ("send_value_signal(str)",
-                       "send_waveform_signal(_np.ndarray)",
-                     "connected_signal()",
+    __pyqtSignals__ = ("connected_signal()",
                      "disconnected_signal()",
                      "no_alarm_signal()",
                      "minor_alarm_signal()",
@@ -27,6 +25,7 @@ class PyDMCheckbox(QCheckBox):
         self.pvbit = bit
         self._value = None
         self._count = None
+        self._isArray = False
         self.clicked.connect(self.sendValue)
         self.clicked.connect(self.sendWaveform)
 
@@ -34,6 +33,7 @@ class PyDMCheckbox(QCheckBox):
     @pyqtSlot(float)
     @pyqtSlot(str)
     def receiveValue(self, value):
+        self._isArray = False
         self._value = int(value)
         value = int(value)
         if self._bit >= 0:#Led represents specific bit of PV
@@ -42,8 +42,9 @@ class PyDMCheckbox(QCheckBox):
 
     @pyqtSlot(_np.ndarray)
     def receiveWaveform(self,value):
+        self._isArray = True
         self._value = value
-        if self._bit < 0 or self._count is None: return
+        if self._bit < 0 and self._count is None: return
         if self._bit >= self._count: return
         self.setChecked(True   if value[self._bit] else   False)
 
@@ -53,6 +54,7 @@ class PyDMCheckbox(QCheckBox):
 
     @pyqtSlot(bool)
     def sendValue(self, checked):
+        if self._isArray: return
         new_val = 1 if checked else 0
         if self._bit >=0:
             new_val = int(self._value)
@@ -61,10 +63,10 @@ class PyDMCheckbox(QCheckBox):
 
     @pyqtSlot(bool)
     def sendWaveform(self,checked):
-        if self._bit < 0 or self._count is None: return
+        if self._bit < 0 or not self._isArray: return
         if self._bit >= self._count: return
         wave = self._value.copy()
-        wave[self._bit] = checked
+        wave[self._bit] = 1 if checked else 0
         self.send_waveform_signal.emit(wave)
 
     @pyqtSlot(bool)

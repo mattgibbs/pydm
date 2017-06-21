@@ -1,8 +1,7 @@
 import sys
 import logging
 from os import path
-
-
+import numpy as _np
 from .channel import PyDMChannel
 from ..PyQt.QtGui import QPushButton
 from ..PyQt.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
@@ -46,8 +45,8 @@ class PyDMPushButton(QPushButton):
         Choice to have the button peform a relative put, instead of always
         setting to an absolute value
     """
-    __pyqtSignals__ = ("send_value_signal(str)",)
     send_value_signal = pyqtSignal([int],[float],[str])
+    send_waveform_signal = pyqtSignal(_np.ndarray)
 
     def __init__(self,parent=None,label=None,icon=None,
                  pressValue=None,relative=False,
@@ -62,6 +61,8 @@ class PyDMPushButton(QPushButton):
         self._value       = None
         self._pressValue  = pressValue
         self._relative    = relative
+        self._count       = None
+        self._isArray     = False
 
         self._channel     = init_channel
         self._channeltype = type(self._value)
@@ -69,6 +70,7 @@ class PyDMPushButton(QPushButton):
         self._write_access = False
         self.update_enabled_state()
         self.clicked.connect(self.sendValue)
+        self.clicked.connect(self.sendWaveform)
 
 
     @pyqtProperty(str,doc=
@@ -141,8 +143,27 @@ class PyDMPushButton(QPushButton):
         Also, the type of the incoming value is stored as well. This allows the
         Widget to send back the same Python type as received from the plugin.
         """
+        self._isArray     = False
         self._value       = new_value
         self._channeltype = type(new_value)
+
+    @pyqtSlot(_np.ndarray)
+    def receiveWaveform(self, new_value):
+        """
+        Receive and store both the value and type of the channel
+
+        While the channel value is not displayed inherently in the Widget, the
+        value is stored in order to accomadate the relative mode of operation.
+        Also, the type of the incoming value is stored as well. This allows the
+        Widget to send back the same Python type as received from the plugin.
+        """
+        self._isArray     = True
+        self._value       = new_value
+        self._channeltype = type(new_value)
+
+    @pyqtSlot(int)
+    def receiveCount(self, new_value):
+        self._count       = int(new_value)
 
     @pyqtSlot(bool)
     def connectionStateChanged(self, connected):
@@ -165,8 +186,7 @@ class PyDMPushButton(QPushButton):
         This function interprets the settings of the PyDMPushButton and sends
         the appropriate value out through the :attr:`.send_value_signal`.
         """
-        if self._pressValue is None or self._value is None:
-            return None
+        if (self._pressValue is None) or (self._value is None) or self._isArray: return
 
         if not self._relative or self._channeltype == str:
             self.send_value_signal[self._channeltype].emit(self._channeltype(self._pressValue))
@@ -174,6 +194,15 @@ class PyDMPushButton(QPushButton):
             send_value = self._value + self._channeltype(self._pressValue)
             self.send_value_signal[self._channeltype].emit(send_value)
 
+    @pyqtSlot()
+    def sendWaveform(self):
+        if self._pressValue is None or self._value is None or not self._isArray: return
+        _pressValue = type(self._value[0])(self._pressValue)
+        if not self._relative:
+            self.send_waveform_signal.emit(_np.array(self._count*[_pressValue]))
+        else:
+            send_value = self._value + self._pressValue
+            self.send_waveform_signal.emit(send_value)
 
     @pyqtSlot(int)
     @pyqtSlot(float)
@@ -188,7 +217,7 @@ class PyDMPushButton(QPushButton):
         state of a different widget, say a QLineEdit or QSlider
         """
         try:
-            self._pressValue = self._channeltype(value)
+            self._pressValue = value
         except ValueError:
             logger.warn('{:} is not a valid pressValue '\
                         'for {:}'.format(value,self.channel))
@@ -200,6 +229,9 @@ class PyDMPushButton(QPushButton):
         return [PyDMChannel(address      = self.channel,
                             value_slot   = self.receiveValue,
                             value_signal = self.send_value_signal,
+                            waveform_slot=self.receiveWaveform,
+                            waveform_signal=self.send_waveform_signal,
+                            count_slot=self.receiveCount,
                             connection_slot = self.connectionStateChanged,
                             write_access_slot = self.writeAccessChanged),
                ]

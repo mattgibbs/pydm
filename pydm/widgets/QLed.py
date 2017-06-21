@@ -273,8 +273,8 @@ class QLed(QWidget):
 
     def __init__(self, parent=None, **kwargs):
         self.m_value=False
-        self.m_onColour=QLed.colorMap.Red
-        self.m_offColour=QLed.colorMap.Grey
+        self.m_onColour=QLed.colorMap.Green
+        self.m_offColour=QLed.colorMap.Red
         self.m_shape=QLed.shapeMap.Circle
 
         QWidget.__init__(self, parent, **kwargs)
@@ -298,29 +298,29 @@ class QLed(QWidget):
         QLed.Triangle = 4
 
 
-    def value(self): return self.m_value
+    def getValue(self): return self.m_value
     def setValue(self, value):
         self.m_value=value
         self.update()
-    value=pyqtProperty(bool, value, setValue)
+    value=pyqtProperty(bool, getValue, setValue)
 
-    def onColour(self): return self.m_onColour
+    def getOnColour(self): return self.m_onColour
     def setOnColour(self, newColour):
         self.m_onColour=newColour
         self.update()
-    onColour=pyqtProperty(colorMap, onColour, setOnColour)
+    onColour=pyqtProperty(colorMap, getOnColour, setOnColour)
 
-    def offColour(self): return self.m_offColour
+    def getOffColour(self): return self.m_offColour
     def setOffColour(self, newColour):
         self.m_offColour=newColour
         self.update()
-    offColour=pyqtProperty(colorMap, offColour, setOffColour)
+    offColour=pyqtProperty(colorMap, getOffColour, setOffColour)
 
-    def shape(self): return self.m_shape
+    def getShape(self): return self.m_shape
     def setShape(self, newShape):
         self.m_shape=newShape
         self.update()
-    shape=pyqtProperty(shapeMap, shape, setShape)
+    shape=pyqtProperty(shapeMap, getShape, setShape)
 
     def sizeHint(self):
         if self.m_shape==QLed.shapeMap.Triangle: return QSize(32,24)
@@ -361,7 +361,10 @@ class QLed(QWidget):
         painter=QPainter(self);
         painter.setRenderHint(QPainter.Antialiasing, True);
 
-        (dark_r,dark_g,dark_b)=self.colours[self.m_onColour if self.m_value else self.m_offColour]
+        if self.isEnabled():
+            (dark_r,dark_g,dark_b)=self.colours[self.m_onColour if self.m_value else self.m_offColour]
+        else:
+            (dark_r,dark_g,dark_b)=self.colours[-1]
 
         dark_str="rgb(%d,%d,%d)" % (dark_r,dark_g,dark_b)
         light_str="rgb(%d,%d,%d)" % self.adjust(dark_r,dark_g,dark_b)
