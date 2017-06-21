@@ -1,10 +1,11 @@
 import numpy as _np
 from pydm.PyQt.QtGui import QWidget
 from pydm.PyQt.QtCore import pyqtSignal, pyqtSlot, pyqtProperty
-
+from pydm.widgets.channel import PyDMChannel
 
 class PyDMWidget(QWidget):
-    _send_value_to_pv_signal = pyqtSignal([int],[float],[str],[_np.ndarray])
+    _send_value_to_pv_signal = pyqtSignal([int],[float],[str])
+    _send_waveform_to_pv_signal = pyqtSignal(_np.ndarray)
     value_signal = pyqtSignal([int],[float],[str],[_np.ndarray])
     enum_strings_signal = pyqtSignal(tuple)
     alarm_severity_signal = pyqtSignal(int)
@@ -43,7 +44,10 @@ class PyDMWidget(QWidget):
     @pyqtSlot(_np.ndarray)
     def sendValue(self, new_value):
         type_ = type(new_value)
-        self._send_value_signal_to_pv[type_].emit(new_value)
+        if type_ == _np.ndarray:
+            self._send_waveform_to_pv_signal.emit(new_value)
+        else:
+            self._send_value_to_pv_signal[type_].emit(new_value)
 
     @pyqtSlot(bool)
     def receiveConnectionState(self, connected):
@@ -63,7 +67,7 @@ class PyDMWidget(QWidget):
         self.precision_signal.emit(prec)
 
     @pyqtSlot(int)
-    def receivePrec(self, count):
+    def receiveCount(self, count):
         self.count_signal.emit(count)
 
     @pyqtSlot(int)
@@ -94,5 +98,5 @@ class PyDMWidget(QWidget):
                                           prec_slot=self.receivePrec,
                                           count_slot=self.receiveCount,
                                           value_signal=self._send_value_to_pv_signal,
-                                          waveform_signal=self._send_value_to_pv_signal ) ]
+                                          waveform_signal=self._send_waveform_to_pv_signal ) ]
         return self._channels

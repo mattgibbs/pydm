@@ -24,7 +24,7 @@ class PyDMCheckbox(QCheckBox):
         self.checkEnableState()
         self.pvbit = bit
         self._value = None
-        self._count = None
+        self._count = -2
         self._isArray = False
         self.clicked.connect(self.sendValue)
         self.clicked.connect(self.sendWaveform)
@@ -44,7 +44,7 @@ class PyDMCheckbox(QCheckBox):
     def receiveWaveform(self,value):
         self._isArray = True
         self._value = value
-        if self._bit < 0 and self._count is None: return
+        if self._bit < 0 or self._count is None: return
         if self._bit >= self._count: return
         self.setChecked(True   if value[self._bit] else   False)
 

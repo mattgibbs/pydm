@@ -76,7 +76,7 @@ class PyDMLed(QLed):
     @pyqtSlot(_np.ndarray)
     def receiveWaveform(self,value):
         self._isArray = True
-        if self._bit < 0: return
+        if self._bit < 0 or self._count is None: return
         if self._bit >= self._count: return
         self.setValue(1   if value[self._bit] else   0)
 
