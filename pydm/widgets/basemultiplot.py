@@ -165,6 +165,7 @@ class BaseMultiPlot(PlotWidget):
             self._traceTitle[i] = 'Trace '+ str(i)
             self._tracePen[i] = mkPen(colors[i],width=2)
             self.trace[i] =  PlotDataItem(pen=self._tracePen[i], symbol=None, name=self._traceTitle[i])
+            self.trace[i].setZValue(i)
 
         #Initiate just trace0
         self.plotItem.addItem(self.trace[0])
