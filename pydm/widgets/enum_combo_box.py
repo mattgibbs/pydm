@@ -60,7 +60,7 @@ class PyDMEnumComboBox(QComboBox):
   #Internal methods
 
   def set_items(self, enums):
-    self.combo_box.clear()
+    self.clear()
     for enum in enums:
       self.addItem(enum)
     self.has_enums = True
