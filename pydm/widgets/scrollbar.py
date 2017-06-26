@@ -1,41 +1,42 @@
-from pydm.PyQt.QtGui import QScrollBar, QInputDialog
+from pydm.PyQt.QtGui import QInputDialog
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
 from pydm.widgets.channel import PyDMChannel
+from pydm.widgets.QDoubleScrollBar import QDoubleScrollBar
 
-class PyDMScrollBar(QScrollBar):
+class PyDMScrollBar(QDoubleScrollBar):
 
     value_changed_signal = pyqtSignal([int],[float],[str])
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, orientation=Qt.Horizontal, init_channel=None, scale=1000):
+    def __init__(self, parent=None, orientation=Qt.Horizontal, init_channel=None, step=10, precision=2):
         super(PyDMScrollBar, self).__init__(orientation,parent)
 
         self.setFocusPolicy(Qt.StrongFocus)
+        self.setSingleStep(step)
+        self.setDecimals(precision)
+        self.setEnabled(False)
         self.setInvertedControls(False)
 
-        self.decimal = 0.0
-        self._scale = scale
+        self._limits_from_pv = False
         self._connected = False
         self._channels = None
         self._channel = init_channel
         self._channeltype = None
-
-        self.setSingleStep(self._scale)
-        self.setPageStep(self._scale * 10)
+        self._value = self.value
 
         self.valueChanged.connect(self.value_changed)
-
 
     @pyqtSlot()
     def changeStep(self):
         d, okPressed = QInputDialog.getDouble(self, "Get double","Value:", self.singleStep()/self._scale, 0.1, 5, 1)
         if okPressed:
-            self.setSingleStep(self._scale * d)
+            self.setSingleStep(d)
 
     @pyqtSlot(bool)
     def connectionStateChanged(self, connected):
         self._connected = connected
+        self.setEnabled(connected)
         if connected:
             self.connected_signal.emit()
         else:
@@ -46,42 +47,46 @@ class PyDMScrollBar(QScrollBar):
     @pyqtSlot(str)
     def receiveValue(self, value):
         self._channeltype = type(value)
+        if not self._isEqual(value):
+            self._value = value
+            self.setValue(float(value))
 
-        scaled_v = value * self._scale
-        new_value = int(value * self._scale)
-        diff = scaled_v - new_value
-        self.decimal = diff/self._scale
-
-        self.setValue(new_value)
-
-    @pyqtSlot()
-    def value_changed(self):
+    @pyqtSlot(float)
+    def value_changed(self,value):
         ''' Emits a value changed signal '''
-        if self._connected:
-            if self.value() == self.minimum():
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.minimum()/self._scale))
-            elif self.value() == self.maximum():
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.maximum()/self._scale))
-            else:
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.value()/self._scale + self.decimal))
+        if self._connected and self._channeltype is not None and not self._isEqual(value):
+            self.value_changed_signal[self._channeltype].emit(self._channeltype(value))
 
+    def _isEqual(self,value):
+        dec = self.decimals
+        return True if int(self._value*dec) == int(value*dec) else False
 
     @pyqtSlot(float)
+    @pyqtSlot(int)
     def receiveLowerLimit(self, value):
-        self.setMinimum(value * self._scale)
+        if self._limits_from_pv: self.setMinimum(float(value))
     @pyqtSlot(float)
+    @pyqtSlot(int)
     def receiveUpperLimit(self, value):
-        self.setMaximum(value * self._scale)
+        if self._limits_from_pv: self.setMaximum(float(value))
+    @pyqtSlot(int)
+    def receivePrec(self, value):
+        if self._limits_from_pv: self.setDecimals(int(value))
 
-    def getChannel(self):
-        return str(self._channel)
-    def setChannel(self, value):
+    #Designer Properties
+    @pyqtProperty(str)
+    def channel(self): return str(self._channel)
+    @channel.setter
+    def channel(self, value):
         if self._channel != value:
             self._channel = str(value)
-    def resetChannel(self):
-        if self._channel != None:
-            self._channel = None
-    channel = pyqtProperty(str, getChannel, setChannel, resetChannel)
+
+    @pyqtProperty(bool)
+    def limitsFromPV(self): return bool(self._limits_from_pv)
+    @limitsFromPV.setter
+    def limitsFromPV(self, value):
+        if self._limits_from_pv != value:
+            self._limits_from_pv = bool(value)
 
     def channels(self):
         if self._channels is None:
@@ -90,5 +95,6 @@ class PyDMScrollBar(QScrollBar):
                                             value_slot=self.receiveValue,
                                             value_signal=self.value_changed_signal,
                                             lower_disp_limit_slot=self.receiveLowerLimit,
-                                            upper_disp_limit_slot=self.receiveUpperLimit)]
+                                            upper_disp_limit_slot=self.receiveUpperLimit,
+                                            prec_slot=self.receivePrec)]
         return self._channels
