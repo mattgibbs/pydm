@@ -9,12 +9,12 @@ class PyDMSpinBox(QDoubleSpinBox):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, init_channel=None, alignment=Qt.AlignCenter,step=None, precision=2):
+    def __init__(self, parent=None, init_channel=None, alignment=Qt.AlignCenter,step=10, precision=2):
         super(PyDMSpinBox, self).__init__(parent)
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setAlignment(alignment)
-        self.setSingleStep(step or 10)
+        self.setSingleStep(step)
         self.setDecimals(precision)
         self.setEnabled(False)
 
@@ -23,6 +23,7 @@ class PyDMSpinBox(QDoubleSpinBox):
         self._channels = None
         self._channel = init_channel
         self._channeltype = None
+        self._value = self.value()
 
         self.valueChanged.connect(self.value_changed) # signal from spinbox
 
@@ -46,18 +47,19 @@ class PyDMSpinBox(QDoubleSpinBox):
     @pyqtSlot(float)
     def receiveValue(self, value):
         self._channeltype = type(value)
-        self.setValue(float(value))
+        if not self._isEqual(value):
+            self._value = value
+            self.setValue(float(value))
 
     @pyqtSlot(float)
     def value_changed(self,value):
         ''' Emits a value changed signal '''
-        if self._connected and self._channeltype is not None:
-            if value <= self.minimum():
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.minimum()))
-            elif value >= self.maximum():
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(self.maximum()))
-            else:
-                self.value_changed_signal[self._channeltype].emit(self._channeltype(value))
+        if self._connected and self._channeltype is not None and not self._isEqual(value):
+            self.value_changed_signal[self._channeltype].emit(self._channeltype(value))
+
+    def _isEqual(self,value):
+        dec = self.decimals()
+        return True if int(self._value*dec) == int(value*dec) else False
 
     @pyqtSlot(float)
     @pyqtSlot(int)
