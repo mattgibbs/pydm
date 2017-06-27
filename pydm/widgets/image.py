@@ -45,7 +45,7 @@ class PyDMImageView(ImageView):
                         colormapMap.monochrome: cmaps['monochrome'],
                         colormapMap.hot:        cmaps['hot']}
 
-    def __init__(self, parent=None, init_image_channel=None, init_width_channel=None, init_image_width=0, init_reading_order=0):
+    def __init__(self, parent=None, init_image_channel=None, init_width_channel=None, init_image_width=0, init_reading_order=0, init_colormap_index=0):
         super(PyDMImageView, self).__init__(parent)
         self._imagechannel = init_image_channel
         self._widthchannel = init_width_channel
@@ -68,8 +68,8 @@ class PyDMImageView(ImageView):
         self._needs_reshape = False
 
         #Default Color Map
-        self._colormapindex = 0
-        self._cm_colors = None
+        self._colormapindex = init_colormap_index
+        self._cm_colors = self.colormapdict[self._colormapindex]
 
         #Menu to change Color Map
         cm_menu = self.getView().getMenu(None).addMenu("Color Map")
@@ -117,15 +117,15 @@ class PyDMImageView(ImageView):
                 try:
                     self.image_width = new_waveform[0]
                     image = new_waveform[1:]
-                    self.image_waveform = image.reshape((int(self.image_width),-1), order=readingorderdict[self._readingOrder])
+                    self.image_waveform = image.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
                 except:
                     raise Exception('Image width is not defined')
         else:
             if len(new_waveform.shape) == 1: # if widthchannel is not defined
-                self.image_waveform = new_waveform.reshape((int(self.image_width),-1), order=readingorderdict[self._readingOrder])
+                self.image_waveform = new_waveform.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
             elif len(new_waveform.shape) == 2: # if widthchannel is defined
                 self.image_waveform = new_waveform
-        self.data_max_int = np.iinfo(self.image_waveform.dtype).max
+        self.data_max_int = self.image_waveform.max() #np.iinfo(self.image_waveform.dtype.type).max
         self.redrawImage()
 
     @pyqtSlot(int)
@@ -136,7 +136,7 @@ class PyDMImageView(ImageView):
             return
         self.image_width = int(new_width)
         if self._needs_reshape:
-            self.image_waveform = self.image_waveform.reshape((int(self.image_width),-1), order=readingorderdict[self._readingOrder])
+            self.image_waveform = self.image_waveform.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
             self._needs_reshape = False
         self.redrawImage()
 
