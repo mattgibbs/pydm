@@ -58,8 +58,8 @@ class PyDMSpinBox(QDoubleSpinBox):
             self.value_changed_signal[self._channeltype].emit(self._channeltype(value))
 
     def _isEqual(self,value):
-        dec = self.decimals()
-        return True if int(self._value*dec) == int(value*dec) else False
+        scale = 10**self.decimals()
+        return True if int(self._value*scale) == int(value*scale) else False
 
     @pyqtSlot(float)
     @pyqtSlot(int)
