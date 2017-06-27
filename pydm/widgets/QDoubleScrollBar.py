@@ -17,8 +17,22 @@ class QDoubleScrollBar(QScrollBar):
     def getDecimals(self):
         return self._decimals
     def setDecimals(self,value):
+        mini   = self.minimum
+        maxi   = self.maximum
+        sgstep = self.singleStep
+        pgstep = self.pageStep
+        val    = self.value
+        slpos  = self.sliderPosition
+
         self._decimals = value
         self._scale = float(10**value)
+
+        self.minimum        = mini
+        self.maximum        = maxi
+        self.singleStep     = sgstep
+        self.pageStep       = pgstep
+        self.value          = val
+        self.sliderPosition = slpos
     decimals = pyqtProperty(float,getDecimals,setDecimals)
 
     def getMinimum(self):
