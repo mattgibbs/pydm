@@ -27,6 +27,13 @@ def trace{0}LineStyle(self,value):
     self._tracePen[{0}].setStyle(self.linestyledict[value])
     self.trace[{0}].setPen(self._tracePen[{0}])
 
+@pyqtProperty(int)
+def trace{0}LineWidth(self):          return self._tracePen[{0}].width()
+@trace{0}LineWidth.setter
+def trace{0}LineWidth(self,value):
+    self._tracePen[{0}].setWidth(value)
+    self.trace[{0}].setPen(self._tracePen[{0}])
+
 @pyqtProperty(symbolMap)
 def trace{0}Symbol(self):        return self._traceSymbol[{0}]
 @trace{0}Symbol.setter
@@ -35,8 +42,15 @@ def trace{0}Symbol(self,value):
     self.trace[{0}].setSymbol(self.symboldict[value])
     self.trace[{0}].setSymbolPen(color)
     self.trace[{0}].setSymbolBrush(color)
-    self.trace[{0}].setSymbolSize(8)
+    self.trace[{0}].setSymbolSize(self._traceSymbolSize[{0}])
     self._traceSymbol[{0}] = value
+
+@pyqtProperty(int)
+def trace{0}SymbolSize(self):        return self._traceSymbolSize[{0}]
+@trace{0}SymbolSize.setter
+def trace{0}SymbolSize(self,value):
+    self._traceSymbolSize[{0}] = value
+    self.trace[{0}].setSymbolSize(self._traceSymbolSize[{0}])
 
 @pyqtProperty(str)
 def trace{0}Title(self):     return str(self._traceTitle[{0}])
@@ -161,12 +175,15 @@ class BaseMultiPlot(PlotWidget):
         self._tracePen        = self.MAX_NUM_TRACES*[None]
         self._traceYAxisIndex = self.MAX_NUM_TRACES*[1]
         self._traceSymbol     = self.MAX_NUM_TRACES*[0]
+        self._traceSymbolSize = self.MAX_NUM_TRACES*[8]
         self._traceVisible    = self.MAX_NUM_TRACES*[True]
         self._legendEntry     = self.MAX_NUM_TRACES*[None]
         for i in range(self.MAX_NUM_TRACES):
             self._traceTitle[i] = 'Trace '+ str(i)
             self._tracePen[i] = mkPen(colors[i],width=2)
-            self.trace[i] =  PlotDataItem(pen=self._tracePen[i], symbol=None, name=self._traceTitle[i])
+            self.trace[i] =  PlotDataItem(pen=self._tracePen[i],
+                                          symbol=self.symboldict[self._traceSymbol],
+                                          name=self._traceTitle[i])
             self.trace[i].setZValue(i)
 
         #Initiate just trace0
