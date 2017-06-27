@@ -23,7 +23,9 @@ def trace{0}Color(self, color):
 @pyqtProperty(lineStyleMap)
 def trace{0}LineSytle(self):          return self.linestyledict[self._tracePen[{0}].style()]
 @trace{0}LineSytle.setter
-def trace{0}LineStyle(self,value):    self._tracePen[{0}].setStyle(self.linestyledict[value])
+def trace{0}LineStyle(self,value):
+    self._tracePen[{0}].setStyle(self.linestyledict[value])
+    self.trace[{0}].setPen(self._tracePen[{0}])
 
 @pyqtProperty(symbolMap)
 def trace{0}Symbol(self):        return self._traceSymbol[{0}]

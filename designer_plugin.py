@@ -22,3 +22,4 @@ from pydm.widgets.waveformplot_qtplugin import PyDMWaveformPlotPlugin
 from pydm.widgets.waveformtable_qtplugin import PyDMWaveformTablePlugin
 from pydm.widgets.widget_qtplugin import PyDMWidgetPlugin
 from pydm.widgets.qled_qtplugin import QLedPlugin
+from pydm.widgets.qdoublescrollbar_qtplugin import QDoubleScrollBarPlugin
