@@ -5,52 +5,57 @@ import numpy as np
 from .channel import PyDMChannel
 from .colormaps import cmaps
 
+READINGORDER = {'Fortranlike': 0, 'Clike': 1}
+aux = 0
+COLORMAP = {}
+for cm in cmaps:
+    COLORMAP[cm] = aux
+    aux += 1
+
 class PyDMImageView(ImageView):
 
+    #Tell Designer what signals are available.
+    __pyqtSignals__ = ("connected_signal()",
+                     "disconnected_signal()")
+
+    #Internal signals, used by the state machine
+    connected_signal = pyqtSignal()
+    disconnected_signal = pyqtSignal()
+
     #enumMap for readingOrderMap
-    Fortranlike = 0
-    Clike =  1
-    #enumMap for colormapMap
-    magma = 0
-    inferno = 1
-    plasma = 2
-    viridis = 3
-    jet = 4
-    monochrome = 5
-    hot = 6
+    locals().update(**READINGORDER)
 
     class readingOrderMap:
-        Fortranlike = 0
-        Clike =  1
-
-    class colormapMap:
-        magma = 0
-        inferno = 1
-        plasma = 2
-        viridis = 3
-        jet = 4
-        monochrome = 5
-        hot = 6
+        locals().update(**READINGORDER)
 
     Q_ENUMS(readingOrderMap)
+
+    #enumMap for colormapMap
+    locals().update(**COLORMAP)
+
+    class colormapMap:
+        locals().update(**COLORMAP)
+
     Q_ENUMS(colormapMap)
 
-    readingorderdict = {readingOrderMap.Fortranlike:    'F',
-                        readingOrderMap.Clike:          'C'}
-    colormapdict =     {colormapMap.magma:      cmaps['magma'],
-                        colormapMap.inferno:    cmaps['inferno'],
-                        colormapMap.plasma:     cmaps['plasma'],
-                        colormapMap.viridis:    cmaps['viridis'],
-                        colormapMap.jet:        cmaps['jet'],
-                        colormapMap.monochrome: cmaps['monochrome'],
-                        colormapMap.hot:        cmaps['hot']}
+    readingorderdict = {Fortranlike:    'F',
+                        Clike:          'C'}
+    colormapdict =     {magma:      cmaps['magma'],
+                        inferno:    cmaps['inferno'],
+                        plasma:     cmaps['plasma'],
+                        viridis:    cmaps['viridis'],
+                        jet:        cmaps['jet'],
+                        monochrome: cmaps['monochrome'],
+                        hot:        cmaps['hot']}
 
-    def __init__(self, parent=None, init_image_channel=None, init_width_channel=None, init_image_width=0, init_reading_order=0, init_colormap_index=0):
+    def __init__(self, parent=None, init_image_channel=None, init_width_channel=None, init_image_width=0, init_reading_order=0, init_colormap_index=0, init_normalize_data=False):
         super(PyDMImageView, self).__init__(parent)
         self._imagechannel = init_image_channel
         self._widthchannel = init_width_channel
         self.image_waveform = np.zeros(0)
         self.image_width = init_image_width
+        self._connected = False
+        self._normalize_data = init_normalize_data
 
         #Hide some itens of the widget
         self.ui.histogram.hide()
@@ -70,16 +75,15 @@ class PyDMImageView(ImageView):
         #Default Color Map
         self._colormapindex = init_colormap_index
         self._cm_colors = self.colormapdict[self._colormapindex]
+        self.setColorMap()
 
         #Menu to change Color Map
         cm_menu = self.getView().getMenu(None).addMenu("Color Map")
         cm_group = QActionGroup(self)
-        index = 0
-        for map_name in cmaps:
+        for map_name in COLORMAP:
           action = cm_group.addAction(map_name)
           action.setCheckable(True)
-          action.index = index
-          index += 1
+          action.index = COLORMAP[map_name]
           cm_menu.addAction(action)
           if action.index == self._colormapindex:
             action.setChecked(True)
@@ -97,7 +101,7 @@ class PyDMImageView(ImageView):
         self.getView().setBackgroundColor(new_colormap.map(0))
         lut = new_colormap.getLookupTable(0.0,1.0,self.data_max_int, alpha=False)
         self.getImageItem().setLookupTable(lut)
-        self.getImageItem().setLevels([self.cm_min/float(self.data_max_int),float(self.data_max_int)])
+        self.getImageItem().setLevels([self.cm_min/float(self.data_max_int),self.cm_max/float(self.data_max_int)])
 
     def setColorMapLimits(self, new_min, new_max):
         self.setColorMapMax(new_max)
@@ -125,7 +129,10 @@ class PyDMImageView(ImageView):
                 self.image_waveform = new_waveform.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
             elif len(new_waveform.shape) == 2: # if widthchannel is defined
                 self.image_waveform = new_waveform
-        self.data_max_int = self.image_waveform.max() #np.iinfo(self.image_waveform.dtype.type).max
+        if self._normalize_data:
+            self.data_max_int = self.image_waveform.max()
+        elif self.image_waveform.dtype in ('int','int64'):
+            self.data_max_int = np.iinfo(self.image_waveform.dtype).max
         self.redrawImage()
 
     @pyqtSlot(int)
@@ -157,7 +164,11 @@ class PyDMImageView(ImageView):
     @pyqtSlot(bool)
     def connectionStateChanged(self, connected):
         #false = disconnected, true = connected
-        pass
+        self._connected = connected
+        if connected:
+          self.connected_signal.emit()
+        else:
+          self.disconnected_signal.emit()
 
     #PyQt properties (the ones that show up in designer)
     @pyqtProperty(int)
