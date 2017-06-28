@@ -48,7 +48,9 @@ class PyDMImageView(ImageView):
                         monochrome: cmaps['monochrome'],
                         hot:        cmaps['hot']}
 
-    def __init__(self, parent=None, init_image_channel=None, init_width_channel=None, init_image_width=0, init_reading_order=0, init_colormap_index=0, init_normalize_data=False):
+    def __init__(self, parent=None, init_image_channel=None, init_width_channel=None,
+                 init_image_width=0, init_reading_order=0, init_colormap_index=0,
+                 init_normalize_data=False):
         super(PyDMImageView, self).__init__(parent)
         self._imagechannel = init_image_channel
         self._widthchannel = init_width_channel
@@ -66,7 +68,6 @@ class PyDMImageView(ImageView):
         #Set Color Map limits
         self.cm_min = 0.0
         self.cm_max = 255.0
-        self.data_max_int = 255 #This is the max value for the image waveform's data type.  It gets set when the waveform updates.
 
         #Reading order of numpy array data
         self._readingOrder = init_reading_order
@@ -96,12 +97,12 @@ class PyDMImageView(ImageView):
         if not new_colormap:
             if not self._cm_colors.any():
                 return
-            pos = np.linspace(self.cm_min/float(self.data_max_int), self.cm_max/float(self.data_max_int), num=len(self._cm_colors))
+            pos = np.linspace(0.0, 1.0, num=len(self._cm_colors))
             new_colormap = ColorMap(pos, self._cm_colors)
         self.getView().setBackgroundColor(new_colormap.map(0))
-        lut = new_colormap.getLookupTable(0.0,1.0,self.data_max_int, alpha=False)
+        lut = new_colormap.getLookupTable(0.0,1.0, alpha=False)
         self.getImageItem().setLookupTable(lut)
-        self.getImageItem().setLevels([self.cm_min/float(self.data_max_int),self.cm_max/float(self.data_max_int)])
+        self.getImageItem().setLevels([0.0,1.0])
 
     def setColorMapLimits(self, new_min, new_max):
         self.setColorMapMax(new_max)
@@ -129,10 +130,6 @@ class PyDMImageView(ImageView):
                 self.image_waveform = new_waveform.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
             elif len(new_waveform.shape) == 2: # if widthchannel is defined
                 self.image_waveform = new_waveform
-        if self._normalize_data:
-            self.data_max_int = self.image_waveform.max()
-        elif self.image_waveform.dtype in ('int','int64'):
-            self.data_max_int = np.iinfo(self.image_waveform.dtype).max
         self.redrawImage()
 
     @pyqtSlot(int)
@@ -148,8 +145,15 @@ class PyDMImageView(ImageView):
         self.redrawImage()
 
     def redrawImage(self):
-        if len(self.image_waveform) > 0 and self.image_width > 0:
-            self.getImageItem().setImage(self.image_waveform, autoLevels=False)
+        if len(self.image_waveform) <=0 or self.image_width <= 0: return
+        if self._normalize_data:
+            mini = self.image_waveform.min()
+            maxi = self.image_waveform.max()
+        else:
+            mini = self.cm_min
+            maxi = self.cm_max
+        image = (self.image_waveform - mini)/(maxi-mini)
+        self.getImageItem().setImage(image, autoLevels=False)
 
     @pyqtSlot(int)
     def alarmStatusChanged(self, new_alarm_state):
@@ -189,17 +193,25 @@ class PyDMImageView(ImageView):
             self._cm_colors = self.colormapdict[self._colormapindex]
             self.setColorMap()
 
+    @pyqtProperty(bool)
+    def normalizeData(self):
+        return self._normalize_data
+    @normalizeData.setter
+    @pyqtSlot(bool)
+    def normalizeData(self, new_norm):
+        if self._normalize_data == new_norm: return
+        self._normalize_data = new_norm
+        self.redrawImage()
+
     @pyqtProperty(int)
     def colorMapMin(self):
         return self.cm_min
     @colorMapMin.setter
     @pyqtSlot(int)
     def colorMapMin(self, new_min):
-        if self.cm_min != new_min:
-            self.cm_min = new_min
-            if self.cm_min > self.cm_max:
-                self.cm_max = self.cm_min
-            self.setColorMap()
+        if self.cm_min == new_min or new_min > self.cm_max: return
+        self.cm_min = new_min
+        self.setColorMap()
 
     @pyqtProperty(int)
     def colorMapMax(self):
@@ -207,12 +219,9 @@ class PyDMImageView(ImageView):
     @colorMapMax.setter
     @pyqtSlot(int)
     def colorMapMax(self, new_max):
-        if self.cm_max != new_max:
-            if new_max >= self.data_max_int:
-                self.cm_max = self.data_max_int
-            if self.cm_max < self.cm_min:
-                self.cm_min = self.cm_max
-            self.setColorMap()
+        if self.cm_max == new_max or new_max < self.cm_min: return
+        self.cm_max = new_max
+        self.setColorMap()
 
     @pyqtProperty(readingOrderMap)
     def readingOrder(self):
