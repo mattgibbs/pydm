@@ -26,6 +26,8 @@ class PyDMSpinBox(QDoubleSpinBox):
         self._value = self.value()
 
         self.valueChanged.connect(self.value_changed) # signal from spinbox
+        self.setKeyboardTracking(False)
+        self.isAccelerated(True)
 
     @pyqtSlot()
     def changeStep(self):
