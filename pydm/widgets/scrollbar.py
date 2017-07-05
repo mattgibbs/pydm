@@ -1,3 +1,5 @@
+"""If using limits from pv, you must set init_precision to avoid bug in widget initialization"""
+
 from pydm.PyQt.QtGui import QInputDialog
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
 from pydm.widgets.channel import PyDMChannel
@@ -9,12 +11,12 @@ class PyDMScrollBar(QDoubleScrollBar):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, orientation=Qt.Horizontal, init_channel=None, step=1, precision=2):
+    def __init__(self, parent=None, orientation=Qt.Horizontal, init_channel=None, step=1, init_precision=2):
         super(PyDMScrollBar, self).__init__(orientation,parent)
 
         self.setFocusPolicy(Qt.StrongFocus)
         self.setSingleStep(step)
-        self.setDecimals(precision)
+        self.setDecimals(init_precision)
         self.setEnabled(False)
         self.setInvertedControls(False)
 

@@ -83,6 +83,7 @@ class PyDMLabel(QLabel):
     self._channels = None
     self._channel = init_channel
     self._prec = 0
+    self._prec_from_pv = False
     self._alarm_sensitive_text = False
     self._alarm_sensitive_border = True
     self._alarm_flags = (self.ALARM_TEXT * self._alarm_sensitive_text) | (self.ALARM_BORDER * self._alarm_sensitive_border)
@@ -111,6 +112,10 @@ class PyDMLabel(QLabel):
       self.setText(self.enum_strings[new_value])
       return
     self.setText(str(new_value))
+
+  @pyqtSlot(int)
+  def receivePrec(self,new_prec):
+    if self._prec_from_pv: self.setPrecision(new_prec)
 
   # -2 to +2, -2 is LOLO, -1 is LOW, 0 is OK, etc.
   @pyqtSlot(int)
@@ -165,6 +170,15 @@ class PyDMLabel(QLabel):
     self._alarm_sensitive_border = checked
     self._alarm_flags = (self.ALARM_TEXT * self._alarm_sensitive_text) | (self.ALARM_BORDER * self._alarm_sensitive_border)
 
+  def getPrecFromPV(self):
+    return str(self._channel)
+
+  def setPrecFromPV(self, value):
+    if self._channel != value:
+      self._channel = bool(value)
+
+  precFromPV = pyqtProperty(bool, getPrecFromPV, setPrecFromPV)
+
   def getChannel(self):
     return str(self._channel)
 
@@ -181,7 +195,6 @@ class PyDMLabel(QLabel):
   def getPrecision(self):
     return self._prec
 
-  @pyqtSlot(int)
   def setPrecision(self, new_prec):
     if self._prec != int(new_prec) and new_prec >= 0:
       self._prec = int(new_prec)
@@ -202,5 +215,5 @@ class PyDMLabel(QLabel):
                                   value_slot=self.receiveValue,
                                   severity_slot=self.alarmSeverityChanged,
                                   enum_strings_slot=self.enumStringsChanged,
-                                  prec_slot=self.setPrecision)]
+                                  prec_slot=self.receivePrec)]
     return self._channels
