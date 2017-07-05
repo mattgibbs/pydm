@@ -9,7 +9,7 @@ class PyDMScrollBar(QDoubleScrollBar):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, orientation=Qt.Horizontal, init_channel=None, step=10, precision=2):
+    def __init__(self, parent=None, orientation=Qt.Horizontal, init_channel=None, step=1, precision=2):
         super(PyDMScrollBar, self).__init__(orientation,parent)
 
         self.setFocusPolicy(Qt.StrongFocus)

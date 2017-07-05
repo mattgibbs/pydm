@@ -48,15 +48,19 @@ class QDoubleScrollBar(QScrollBar):
     maximum = pyqtProperty(float,getMaximum,setMaximum)
 
     def getSingleStep(self):
-        return super().singleStep()/self._scale
+        # return super().singleStep()/self._scale
+        return super().singleStep()
     def setSingleStep(self,value):
-        super().setSingleStep(int(value*self._scale))
+        # super().setSingleStep(int(value*self._scale))
+        super().setSingleStep(int(value))
     singleStep = pyqtProperty(float,getSingleStep,setSingleStep)
 
     def getPageStep(self):
-        return super().pageStep()/self._scale
+        # return super().pageStep()/self._scale
+        return super().pageStep()
     def setPageStep(self,value):
-        super().setPageStep(int(value*self._scale))
+        # super().setPageStep(int(value*self._scale))
+        super().setPageStep(int(value))
     pageStep = pyqtProperty(float,getPageStep,setPageStep)
 
     def getValue(self):
