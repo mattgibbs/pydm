@@ -12,7 +12,8 @@ class Connection(PyDMConnection):
   def send_new_value(self, pvname=None, value=None, char_value=None, units=None,
         enum_strs=None, severity=None, count=None, write_access=None, ftype=None,
         lower_disp_limit=None, upper_disp_limit=None, precision=None, *args, **kws):
-
+    if precision is not None:
+      self.prec_signal.emit(int(precision))
     if severity != None:
       self.new_severity_signal.emit(int(severity))
     if write_access != None:
@@ -28,8 +29,6 @@ class Connection(PyDMConnection):
       self.lower_disp_limit_signal[float].emit(float(lower_disp_limit))
     if upper_disp_limit is not None:
       self.upper_disp_limit_signal[float].emit(float(upper_disp_limit))
-    if precision is not None:
-      self.prec_signal.emit(int(precision))
     if count is not None:
         self.count_signal.emit(count)
     if value is not None:
