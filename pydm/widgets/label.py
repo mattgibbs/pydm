@@ -175,7 +175,7 @@ class PyDMLabel(QLabel):
 
   def setPrecFromPV(self, value):
     if self._prec_from_pv != value:
-        self._prec_from_pv = value
+      self._prec_from_pv = bool(value)
 
   precFromPV = pyqtProperty(bool, getPrecFromPV, setPrecFromPV)
 
