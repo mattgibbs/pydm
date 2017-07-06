@@ -171,11 +171,11 @@ class PyDMLabel(QLabel):
     self._alarm_flags = (self.ALARM_TEXT * self._alarm_sensitive_text) | (self.ALARM_BORDER * self._alarm_sensitive_border)
 
   def getPrecFromPV(self):
-    return str(self._channel)
+    return bool(self._prec_from_pv)
 
   def setPrecFromPV(self, value):
-    if self._channel != value:
-      self._channel = bool(value)
+    if self._prec_from_pv != value:
+      self._prec_from_pv = bool(value)
 
   precFromPV = pyqtProperty(bool, getPrecFromPV, setPrecFromPV)
 
