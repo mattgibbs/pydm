@@ -62,6 +62,16 @@ class QDoubleScrollBar(QScrollBar):
         super().setPageStep(int(value))
     pageStep = pyqtProperty(float,getPageStep,setPageStep)
 
+    def keyPressEvent(self,event):
+        if event.key() == Qt.Key_Plus:
+            self.setSingleStep(2*self.getSingleStep())
+            self.setPageStep(2*self.getPageStep())
+        elif event.key() == Qt.Key_Minus:
+            self.setSingleStep(0.5*self.getSingleStep())
+            self.setPageStep(0.5*self.getPageStep())
+        else:
+            super().keyPressEvent(event)
+
     def getValue(self):
         return super().value()/self._scale
     @pyqtSlot(float)
