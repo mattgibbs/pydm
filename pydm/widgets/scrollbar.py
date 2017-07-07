@@ -27,6 +27,7 @@ class PyDMScrollBar(QDoubleScrollBar):
 
         self.valueChanged.connect(self.value_changed)
 
+
     @pyqtSlot()
     def changeStep(self):
         d, okPressed = QInputDialog.getDouble(self, "Get double","Value:", self.singleStep()/self._scale, 0.1, 5, 1)
@@ -68,7 +69,12 @@ class PyDMScrollBar(QDoubleScrollBar):
     @pyqtSlot(float)
     @pyqtSlot(int)
     def receiveUpperLimit(self, value):
-        if self._limits_from_pv: self.setMaximum(float(value))
+        if self._limits_from_pv:
+            if value == self.getMinimum():
+                self.setMaximum(float(value + 1/self._scale))
+            else:
+                self.setMaximum(float(value))
+            self.setToolTip("Min: {1}\nMax: {0}".format(self.getMaximum(), self.getMinimum()))
     @pyqtSlot(int)
     def receivePrec(self, value):
         if self._limits_from_pv: self.setDecimals(int(value))
