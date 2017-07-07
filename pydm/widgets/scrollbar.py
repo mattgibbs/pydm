@@ -24,9 +24,20 @@ class PyDMScrollBar(QDoubleScrollBar):
         self._channel = init_channel
         self._channeltype = None
         self._value = self.value
+        self._signal_emitted = False
+        self._slider_moving = False
+
+        self.sliderPressed.connect(lambda: self.setSliderMoving(True))
+        self.sliderReleased.connect(lambda: self.setSliderMoving(False))
 
         self.valueChanged.connect(self.value_changed)
 
+    @pyqtSlot(bool)
+    def setSliderMoving(self, moving):
+        self._slider_moving = moving
+
+        if not moving:
+            self.value_changed(self.value)
 
     @pyqtSlot()
     def changeStep(self):
@@ -51,14 +62,19 @@ class PyDMScrollBar(QDoubleScrollBar):
         if not self._isEqual(value):
             self._value = value
             self.setValue(float(value))
+            self._signal_emitted = False
 
     @pyqtSlot(float)
-    def value_changed(self,value):
+    def value_changed(self, value):
         ''' Emits a value changed signal '''
-        if self._connected and self._channeltype is not None and not self._isEqual(value):
+        if self._connected and self._channeltype is not None and not \
+                self._isEqual(value) and \
+                self._slider_moving is False and \
+                self._signal_emitted is False:
+            self._signal_emitted = True
             self.value_changed_signal[self._channeltype].emit(self._channeltype(value))
 
-    def _isEqual(self,value):
+    def _isEqual(self, value):
         scale = 10**self.decimals
         return True if int(self._value*scale) == int(value*scale) else False
 
@@ -66,6 +82,7 @@ class PyDMScrollBar(QDoubleScrollBar):
     @pyqtSlot(int)
     def receiveLowerLimit(self, value):
         if self._limits_from_pv: self.setMinimum(float(value))
+
     @pyqtSlot(float)
     @pyqtSlot(int)
     def receiveUpperLimit(self, value):
@@ -75,6 +92,7 @@ class PyDMScrollBar(QDoubleScrollBar):
             else:
                 self.setMaximum(float(value))
             self.setToolTip("Min: {1}\nMax: {0}".format(self.getMaximum(), self.getMinimum()))
+
     @pyqtSlot(int)
     def receivePrec(self, value):
         if self._limits_from_pv: self.setDecimals(int(value))
@@ -82,6 +100,7 @@ class PyDMScrollBar(QDoubleScrollBar):
     #Designer Properties
     @pyqtProperty(str)
     def channel(self): return str(self._channel)
+
     @channel.setter
     def channel(self, value):
         if self._channel != value:
@@ -89,6 +108,7 @@ class PyDMScrollBar(QDoubleScrollBar):
 
     @pyqtProperty(bool)
     def limitsFromPV(self): return bool(self._limits_from_pv)
+
     @limitsFromPV.setter
     def limitsFromPV(self, value):
         if self._limits_from_pv != value:
@@ -96,11 +116,12 @@ class PyDMScrollBar(QDoubleScrollBar):
 
     def channels(self):
         if self._channels is None:
-            self._channels = [PyDMChannel(  address=self._channel,
-                                            connection_slot=self.connectionStateChanged,
-                                            value_slot=self.receiveValue,
-                                            value_signal=self.value_changed_signal,
-                                            lower_disp_limit_slot=self.receiveLowerLimit,
-                                            upper_disp_limit_slot=self.receiveUpperLimit,
-                                            prec_slot=self.receivePrec)]
+            self._channels = [PyDMChannel(
+                address=self._channel,
+                connection_slot=self.connectionStateChanged,
+                value_slot=self.receiveValue,
+                value_signal=self.value_changed_signal,
+                lower_disp_limit_slot=self.receiveLowerLimit,
+                upper_disp_limit_slot=self.receiveUpperLimit,
+                prec_slot=self.receivePrec)]
         return self._channels

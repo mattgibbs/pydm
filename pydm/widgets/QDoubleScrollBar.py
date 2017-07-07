@@ -26,7 +26,6 @@ class QDoubleScrollBar(QScrollBar):
 
         self._decimals = value
         self._scale = float(10**value)
-
         self.minimum        = mini
         self.maximum        = maxi
         self.singleStep     = sgstep
