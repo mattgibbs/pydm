@@ -82,15 +82,17 @@ class PyDMLabel(QLabel):
         }
       }
 
-    def __init__(self, parent=None, init_channel=None):
+    def __init__(self, parent=None, init_channel=None, prec_from_pv=False,
+                 alignment=Qt.AlignCenter):
         super(PyDMLabel, self).__init__(parent)
         self.setTextFormat(Qt.PlainText)
         self.setTextInteractionFlags(Qt.NoTextInteraction)
+        self.setAlignment(alignment)
         self.value = None
         self._channels = None
         self._channel = init_channel
         self._prec = 0
-        self._prec_from_pv = False
+        self._prec_from_pv = prec_from_pv
         self._alarm_sensitive_text = False
         self._alarm_sensitive_border = False
         self._alarm_flags = (self.ALARM_TEXT * self._alarm_sensitive_text) |\
