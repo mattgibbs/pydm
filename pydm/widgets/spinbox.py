@@ -9,7 +9,7 @@ class PyDMSpinBox(QDoubleSpinBox):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, init_channel=None,
+    def __init__(self, parent=None, init_channel=None, limits_from_pv=False,
                  alignment=Qt.AlignCenter, step=10, precision=2):
         super(PyDMSpinBox, self).__init__(parent)
 
@@ -19,7 +19,7 @@ class PyDMSpinBox(QDoubleSpinBox):
         self.setDecimals(precision)
         self.setEnabled(False)
 
-        self._limits_from_pv = False
+        self._limits_from_pv = limits_from_pv
         self._connected = False
         self._channels = None
         self._channel = init_channel
