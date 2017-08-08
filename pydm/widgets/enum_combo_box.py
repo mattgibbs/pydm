@@ -4,7 +4,7 @@ from .channel import PyDMChannel
 
 
 class PyDMEnumComboBox(QComboBox):
-    valueChanged = pyqtSignal(int)
+    valueChanged = pyqtSignal([int], [str])
 
     ALARM_NONE = 0
     ALARM_MINOR = 1
@@ -19,7 +19,7 @@ class PyDMEnumComboBox(QComboBox):
       ALARM_DISCONNECTED: "color: white;"
     }
 
-    def __init__(self, parent=None, init_channel=None):
+    def __init__(self, parent=None, init_channel=None, type_value=int):
         super(PyDMEnumComboBox, self).__init__(parent=parent)
         # Internal values for properties
         self._connected = False
@@ -28,6 +28,7 @@ class PyDMEnumComboBox(QComboBox):
         self._channels = None
         self._channel = init_channel
         self._value = None
+        self._tp_value = type_value
         self.setEnabled(False)
         self.activated[int].connect(self.internal_combo_box_activated_int)
 
@@ -95,6 +96,8 @@ class PyDMEnumComboBox(QComboBox):
     @pyqtSlot(float)
     @pyqtSlot(str)
     def receiveValue(self, new_val):
+        if isinstance(new_val, str) and self.findText(new_val) >= 0:
+            new_val = self.findText(new_val)
         if self._value != new_val:
             self._value = new_val
             self.setCurrentIndex(new_val)
@@ -102,7 +105,10 @@ class PyDMEnumComboBox(QComboBox):
     @pyqtSlot(int)
     def internal_combo_box_activated_int(self, index):
         if self._value != index:
-            self.valueChanged.emit(index)
+            if self._tp_value == str:
+                self.valueChanged[str].emit(self.currentText())
+            else:
+                self.valueChanged[int].emit(index)
 
     # PyQt properties (the ones that show up in designer)
     @pyqtProperty(str)
