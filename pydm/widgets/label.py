@@ -1,3 +1,4 @@
+import numpy as _np
 from ..PyQt.QtGui import QLabel, QApplication, QColor
 from ..PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
 from .channel import PyDMChannel
@@ -6,8 +7,7 @@ from ..application import PyDMApplication
 
 class PyDMLabel(QLabel):
     # Tell Designer what signals are available.
-    __pyqtSignals__ = ("send_value_signal(str)",
-                       "connected_signal()",
+    __pyqtSignals__ = ("connected_signal()",
                        "disconnected_signal()",
                        "no_alarm_signal()",
                        "minor_alarm_signal()",
@@ -110,18 +110,16 @@ class PyDMLabel(QLabel):
     @pyqtSlot(float)
     @pyqtSlot(int)
     @pyqtSlot(str)
+    @pyqtSlot(_np.ndarray)
     def receiveValue(self, new_value):
         self.value = new_value
-        if isinstance(new_value, str):
-            self.setText(new_value)
-            return
-        if isinstance(new_value, float):
+        if isinstance(new_value, _np.ndarray):
+            new_value = ' '.join([str(v) for v in new_value])
+        elif isinstance(new_value, float):
             if self.format_string:
-                self.setText(self.format_string.format(new_value))
-                return
-        if self.enum_strings is not None and isinstance(new_value, int):
-            self.setText(self.enum_strings[new_value])
-            return
+                new_value = self.format_string.format(new_value)
+        elif self.enum_strings is not None and isinstance(new_value, int):
+            new_value = self.enum_strings[new_value]
         self.setText(str(new_value))
 
     @pyqtSlot(int)
@@ -157,9 +155,9 @@ class PyDMLabel(QLabel):
             self.enum_strings = enum_strings
             self.receiveValue(self.value)
 
-    @pyqtProperty(bool, doc="Whether or not the label's text color changes \
-                                                when alarm severity changes.")
+    @pyqtProperty(bool)
     def alarmSensitiveText(self):
+        """Whether the text color changes when alarm severity changes."""
         return self._alarm_sensitive_text
 
     @alarmSensitiveText.setter
@@ -168,9 +166,9 @@ class PyDMLabel(QLabel):
         self._alarm_flags = (self.ALARM_TEXT * self._alarm_sensitive_text) | \
                             (self.ALARM_BORDER * self._alarm_sensitive_border)
 
-    @pyqtProperty(bool, doc="Whether or not the label's border color changes\
-                                            when alarm severity changes.")
+    @pyqtProperty(bool)
     def alarmSensitiveBorder(self):
+        """Whether the border color changes when alarm severity changes."""
         return self._alarm_sensitive_border
 
     @alarmSensitiveBorder.setter
@@ -223,6 +221,7 @@ class PyDMLabel(QLabel):
                             address=self.channel,
                             connection_slot=self.connectionStateChanged,
                             value_slot=self.receiveValue,
+                            waveform_slot=self.receiveValue,
                             severity_slot=self.alarmSeverityChanged,
                             enum_strings_slot=self.enumStringsChanged,
                             prec_slot=self.receivePrec)]
