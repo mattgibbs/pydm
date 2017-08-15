@@ -9,7 +9,8 @@ class PyDMSpinBox(QDoubleSpinBox):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, init_channel=None, alignment=Qt.AlignCenter,step=10, precision=2):
+    def __init__(self, parent=None, init_channel=None, limits_from_pv=False,
+                 alignment=Qt.AlignCenter, step=10, precision=2):
         super(PyDMSpinBox, self).__init__(parent)
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -18,14 +19,14 @@ class PyDMSpinBox(QDoubleSpinBox):
         self.setDecimals(precision)
         self.setEnabled(False)
 
-        self._limits_from_pv = False
+        self._limits_from_pv = limits_from_pv
         self._connected = False
         self._channels = None
         self._channel = init_channel
         self._channeltype = None
         self._value = self.value()
 
-        self.valueChanged.connect(self.value_changed) # signal from spinbox
+        self.valueChanged.connect(self.value_changed)  # signal from spinbox
         self.setKeyboardTracking(False)
         self.setAccelerated(True)
 
