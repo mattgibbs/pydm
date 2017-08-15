@@ -17,6 +17,7 @@ from pydm.widgets.scrollbar_qtplugin import PyDMScrollBarPlugin
 from pydm.widgets.shell_command_qtplugin import PyDMShellCommandPlugin
 from pydm.widgets.slider_qtplugin import PyDMSliderPlugin
 from pydm.widgets.spinbox_qtplugin import PyDMSpinBoxPlugin
+from pydm.widgets.state_button_qtplugin import PyDMStateButtonPlugin
 from pydm.widgets.timeplot_qtplugin import PyDMTimePlotPlugin
 from pydm.widgets.waveformplot_qtplugin import PyDMWaveformPlotPlugin
 from pydm.widgets.waveformtable_qtplugin import PyDMWaveformTablePlugin
