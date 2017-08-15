@@ -1,7 +1,7 @@
 """PyDM State Button Class."""
 
 import numpy as _np
-from pydm.PyQt.QtGui import QPainter, QStyleOption, QCheckBox
+from pydm.PyQt.QtGui import QPainter, QStyleOption, QAbstractButton
 from pydm.PyQt.QtCore import (pyqtSignal, pyqtSlot, pyqtProperty, Q_ENUMS,
                               QByteArray, QRectF, QSize)
 from pydm.PyQt.QtSvg import QSvgRenderer
@@ -11,7 +11,7 @@ from pydm.widgets.channel import PyDMChannel
 BUTTONSHAPE = {'Squared': 0, 'Rounded': 1}
 
 
-class PyDMStateButton(QCheckBox):
+class PyDMStateButton(QAbstractButton):
     """PyDM State Button Class."""
 
     __pyqtSignals__ = ("connected_signal()",
@@ -22,7 +22,7 @@ class PyDMStateButton(QCheckBox):
                        "invalid_alarm_signal()")
 
     # Emitted when the user changes the value.
-    send_value_signal = pyqtSignal(str)
+    send_value_signal = pyqtSignal(int)
     send_waveform_signal = pyqtSignal(_np.ndarray)
 
     class buttonShapeMap:
@@ -1425,6 +1425,7 @@ class PyDMStateButton(QCheckBox):
         self.clicked.connect(self.sendWaveform)
         self._shape = shape
         self.renderer = QSvgRenderer()
+        self.setCheckable(True)
 
     @pyqtProperty(bool)
     def value(self):
@@ -1454,10 +1455,9 @@ class PyDMStateButton(QCheckBox):
         self._isArray = False
         self.value = int(value)
         value = int(value)
-        if self._bit >= 0:   # Led represents specific bit of PV
-            # shifts value _bit times to the right and bitwise and with 1
+        if self._bit >= 0:
             value = (value >> self._bit) & 1
-        self.setChecked(True if value else False)
+        self.update()
 
     @pyqtSlot(_np.ndarray)
     def receiveWaveform(self, value):
@@ -1468,7 +1468,7 @@ class PyDMStateButton(QCheckBox):
             return
         if self._bit >= self._count:
             return
-        self.setChecked(True if value[self._bit] else False)
+        self.update()
 
     @pyqtSlot(int)
     def receiveCount(self, value):
@@ -1486,7 +1486,7 @@ class PyDMStateButton(QCheckBox):
             new_val ^= (-checked ^ new_val) & (1 << self._bit)
             # I didn't try to understand:
             # https://stackoverflow.com/questions/47981/how-do-you-set-clear-and-toggle-a-single-bit
-        self.send_value_signal.emit(str(new_val))
+        self.send_value_signal.emit(new_val)
 
     @pyqtSlot(bool)
     def sendWaveform(self, checked):
@@ -1534,6 +1534,7 @@ class PyDMStateButton(QCheckBox):
             shape_dict = PyDMStateButton.roundedbuttonstatesdict
 
         option = QStyleOption()
+        option.initFrom(self)
         h = option.rect.height()
         w = option.rect.width()
         aspect = 2.0
