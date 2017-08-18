@@ -1,4 +1,3 @@
-from pydm.PyQt.QtGui import QInputDialog
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
 from pydm.widgets.channel import PyDMChannel
 from pydm.widgets.QDoubleScrollBar import QDoubleScrollBar
@@ -11,14 +10,19 @@ class PyDMScrollBar(QDoubleScrollBar):
     disconnected_signal = pyqtSignal()
 
     def __init__(self, parent=None, orientation=Qt.Horizontal,
-                 init_channel=None, step=1, precision=2):
+                 init_channel=None, step=None, precision=2):
         super(PyDMScrollBar, self).__init__(orientation, parent)
 
         self.setFocusPolicy(Qt.StrongFocus)
-        self.setSingleStep(step)
         self.setDecimals(precision)
         self.setEnabled(False)
         self.setInvertedControls(False)
+        if not step:
+            self.setSingleStep(1/10**precision)
+            self.setPageStep(10/10**precision)
+        else:
+            self.setSingleStep(step)
+            self.setPageStep(10 * step)
 
         self._limits_from_pv = False
         self._connected = False
@@ -26,28 +30,9 @@ class PyDMScrollBar(QDoubleScrollBar):
         self._channel = init_channel
         self._ch_typ = None
         self._value = self.value
-        self._signal_emitted = False
-        self._slider_moving = False
 
-        # self.sliderPressed.connect(lambda: self.setSliderMoving(True))
-        # self.sliderReleased.connect(lambda: self.setSliderMoving(False))
-
-        self.valueChanged.connect(self.value_changed)
-
-    # @pyqtSlot(bool)
-    # def setSliderMoving(self, moving):
-    #     self._slider_moving = moving
-    #
-    #     if not moving:
-    #         self.value_changed(self.value)
-
-    @pyqtSlot()
-    def changeStep(self):
-        d, okPressed = QInputDialog.getDouble(self, "Get double", "Value:",
-                                              self.singleStep()/self._scale,
-                                              0.1, 5, 1)
-        if okPressed:
-            self.setSingleStep(d)
+        self.setTracking(True)
+        self.actionTriggered.connect(self.value_changed)
 
     @pyqtSlot(bool)
     def connectionStateChanged(self, connected):
@@ -63,22 +48,16 @@ class PyDMScrollBar(QDoubleScrollBar):
     @pyqtSlot(str)
     def receiveValue(self, value):
         self._ch_typ = type(value)
-        if not self._isEqual(value):
-            self._value = value
-            self.setValue(float(value))
-            self._signal_emitted = False
+        self._value = value
+        self.setValue(float(value))
 
+    @pyqtSlot(int)
     @pyqtSlot(float)
     def value_changed(self, value):
         ''' Emits a value changed signal '''
-        if self._connected and \
-           self._ch_typ is not None and \
-           not self._isEqual(value):
+        value = self.sliderPosition
+        if self._connected and self._ch_typ is not None:
             self.value_changed_signal[self._ch_typ].emit(self._ch_typ(value))
-
-    def _isEqual(self, value):
-        scale = 10**self.decimals
-        return True if not round((self._value-value)*scale) else False
 
     @pyqtSlot(float)
     @pyqtSlot(int)
@@ -96,8 +75,10 @@ class PyDMScrollBar(QDoubleScrollBar):
 
     @pyqtSlot(int)
     def receivePrec(self, value):
-        if self._limits_from_pv:
+        if self._limits_from_pv and value != self.getDecimals():
             self.setDecimals(round(value))
+            self.setSingleStep(1/10**value)
+            self.setPageStep(10/10**value)
 
     # Designer Properties
     @pyqtProperty(str)
