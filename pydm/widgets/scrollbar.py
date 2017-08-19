@@ -116,10 +116,10 @@ class PyDMScrollBar(QDoubleScrollBar):
         return self._channels
 
     def _update_tooltip(self):
-        fmt = '{0:.' + '{0:d}'.format(self.decimals()) + 'f}'
+        fmt = '{0:.' + '{0:d}'.format(self.decimals) + 'f}'
         toltp = (self._channel or '') + '\n'
         if self.isEnabled():
-            toltp += 'min: ' + fmt.format(self.minimum()) + '\n'
-            toltp += 'max: ' + fmt.format(self.maximum()) + '\n'
-            toltp += 'step: ' + fmt.format(self.singleStep()) + '\n'
+            toltp += 'min: ' + fmt.format(self.minimum) + '\n'
+            toltp += 'max: ' + fmt.format(self.maximum) + '\n'
+            toltp += 'step: ' + fmt.format(self.singleStep) + '\n'
         self.setToolTip(toltp)
