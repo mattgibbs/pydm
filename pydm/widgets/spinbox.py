@@ -23,7 +23,7 @@ class PyDMSpinBox(QDoubleSpinBox):
         self._connected = False
         self._channels = None
         self._channel = init_channel
-        self._channeltype = None
+        self._ch_typ = None
         self._value = self.value()
 
         self.valueChanged.connect(self.value_changed)  # signal from spinbox
@@ -32,7 +32,8 @@ class PyDMSpinBox(QDoubleSpinBox):
 
     @pyqtSlot()
     def changeStep(self):
-        d, okPressed = QInputDialog.getDouble(self, "Get double","Value:", self.singleStep(), 0.1, 5, 1)
+        d, okPressed = QInputDialog.getDouble(self, "Get double", "Value:",
+                                              self.singleStep(), 0.1, 5, 1)
         if okPressed:
             self.setSingleStep(d)
 
@@ -49,43 +50,54 @@ class PyDMSpinBox(QDoubleSpinBox):
     @pyqtSlot(int)
     @pyqtSlot(float)
     def receiveValue(self, value):
-        self._channeltype = type(value)
+        self._ch_typ = type(value)
         if not self._isEqual(value):
             self._value = value
             self.setValue(float(value))
 
     @pyqtSlot(float)
-    def value_changed(self,value):
+    def value_changed(self, value):
         ''' Emits a value changed signal '''
-        if self._connected and self._channeltype is not None and not self._isEqual(value):
-            self.value_changed_signal[self._channeltype].emit(self._channeltype(value))
+        if self._connected and \
+           self._ch_typ is not None and \
+           not self._isEqual(value):
+            self.value_changed_signal[self._ch_typ].emit(self._ch_typ(value))
 
-    def _isEqual(self,value):
+    def _isEqual(self, value):
         scale = 10**self.decimals()
-        return True if int(self._value*scale) == int(value*scale) else False
+        return True if round(self._value*scale) == round(value*scale) else False
 
     @pyqtSlot(float)
     @pyqtSlot(int)
     def receiveLowerLimit(self, value):
-        if self._limits_from_pv: self.setMinimum(float(value))
+        if self._limits_from_pv:
+            self.setMinimum(float(value))
+
     @pyqtSlot(float)
     @pyqtSlot(int)
     def receiveUpperLimit(self, value):
-        if self._limits_from_pv: self.setMaximum(float(value))
+        if self._limits_from_pv:
+            self.setMaximum(float(value))
+
     @pyqtSlot(int)
     def receivePrec(self, value):
-        if self._limits_from_pv: self.setDecimals(int(value))
+        if self._limits_from_pv:
+            self.setDecimals(int(value))
 
-    #Designer Properties
+    # Designer Properties
     @pyqtProperty(str)
-    def channel(self): return str(self._channel)
+    def channel(self):
+        return str(self._channel)
+
     @channel.setter
     def channel(self, value):
         if self._channel != value:
             self._channel = str(value)
 
     @pyqtProperty(bool)
-    def limitsFromPV(self): return bool(self._limits_from_pv)
+    def limitsFromPV(self):
+        return bool(self._limits_from_pv)
+
     @limitsFromPV.setter
     def limitsFromPV(self, value):
         if self._limits_from_pv != value:
@@ -93,11 +105,12 @@ class PyDMSpinBox(QDoubleSpinBox):
 
     def channels(self):
         if self._channels is None:
-            self._channels = [PyDMChannel(  address=self._channel,
-                                            connection_slot=self.connectionStateChanged,
-                                            value_slot=self.receiveValue,
-                                            value_signal=self.value_changed_signal,
-                                            lower_disp_limit_slot=self.receiveLowerLimit,
-                                            upper_disp_limit_slot=self.receiveUpperLimit,
-                                            prec_slot=self.receivePrec)]
+            self._channels = [PyDMChannel(
+                address=self._channel,
+                connection_slot=self.connectionStateChanged,
+                value_slot=self.receiveValue,
+                value_signal=self.value_changed_signal,
+                lower_disp_limit_slot=self.receiveLowerLimit,
+                upper_disp_limit_slot=self.receiveUpperLimit,
+                prec_slot=self.receivePrec)]
         return self._channels
