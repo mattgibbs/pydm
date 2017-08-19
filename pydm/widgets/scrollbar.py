@@ -30,6 +30,7 @@ class PyDMScrollBar(QDoubleScrollBar):
         self._channel = init_channel
         self._ch_typ = None
         self._value = self.value
+        self._update_tooltip()
 
         self.setTracking(True)
         self.actionTriggered.connect(self.value_changed)
@@ -42,6 +43,7 @@ class PyDMScrollBar(QDoubleScrollBar):
             self.connected_signal.emit()
         else:
             self.disconnected_signal.emit()
+        self._update_tooltip()
 
     @pyqtSlot(float)
     @pyqtSlot(int)
@@ -64,14 +66,14 @@ class PyDMScrollBar(QDoubleScrollBar):
     def receiveLowerLimit(self, value):
         if self._limits_from_pv:
             self.setMinimum(float(value))
+            self._update_tooltip()
 
     @pyqtSlot(float)
     @pyqtSlot(int)
     def receiveUpperLimit(self, value):
         if self._limits_from_pv:
             self.setMaximum(float(value))
-            self.setToolTip("Min: {1}\nMax: {0}".format(self.getMaximum(),
-                                                        self.getMinimum()))
+            self._update_tooltip()
 
     @pyqtSlot(int)
     def receivePrec(self, value):
@@ -79,6 +81,7 @@ class PyDMScrollBar(QDoubleScrollBar):
             self.setDecimals(round(value))
             self.setSingleStep(1/10**value)
             self.setPageStep(10/10**value)
+            self._update_tooltip()
 
     # Designer Properties
     @pyqtProperty(str)
@@ -89,6 +92,7 @@ class PyDMScrollBar(QDoubleScrollBar):
     def channel(self, value):
         if self._channel != value:
             self._channel = str(value)
+            self._update_tooltip()
 
     @pyqtProperty(bool)
     def limitsFromPV(self):
@@ -110,3 +114,12 @@ class PyDMScrollBar(QDoubleScrollBar):
                 upper_disp_limit_slot=self.receiveUpperLimit,
                 prec_slot=self.receivePrec)]
         return self._channels
+
+    def _update_tooltip(self):
+        fmt = '{0:.' + '{0:d}'.format(self.decimals()) + 'f}'
+        toltp = (self._channel or '') + '\n'
+        if self.isEnabled():
+            toltp += 'min: ' + fmt.format(self.minimum()) + '\n'
+            toltp += 'max: ' + fmt.format(self.maximum()) + '\n'
+            toltp += 'step: ' + fmt.format(self.singleStep()) + '\n'
+        self.setToolTip(toltp)
