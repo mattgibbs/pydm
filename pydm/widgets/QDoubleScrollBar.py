@@ -136,9 +136,6 @@ class QDoubleScrollBar(QScrollBar):
     def keyPressEvent(self, event):
         singlestep = self.getSingleStep()
         pagestep = self.getPageStep()
-        mini = self.getMinimum()
-        maxi = self.getMaximum()
-        max_single = maxi - mini
         if (event.key() == Qt.Key_Plus):
             self.setSingleStep(10*singlestep)
             self.setPageStep(10*pagestep)
