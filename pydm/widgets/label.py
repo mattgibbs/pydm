@@ -101,6 +101,7 @@ class PyDMLabel(QLabel):
         self.enum_strings = None
         self.format_string = None
         self.setText("PyDMLabel")
+        self.setToolTip(self._channel or '')
         # If this label is inside a PyDMApplication (not Designer)
         # start it in the disconnected state.
         app = QApplication.instance()
@@ -192,6 +193,7 @@ class PyDMLabel(QLabel):
     def setChannel(self, value):
         if self._channel != value:
             self._channel = str(value)
+            self.setToolTip(self._channel or '')
 
     def resetChannel(self):
         if self._channel is not None:

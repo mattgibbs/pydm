@@ -1,4 +1,5 @@
-from pydm.PyQt.QtGui import QScrollBar
+from pydm.PyQt.QtGui import QInputDialog
+from pydm.PyQt.QtGui import QScrollBar, QAction, QMenu
 from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
 
 
@@ -15,26 +16,61 @@ class QDoubleScrollBar(QScrollBar):
         super().sliderMoved.connect(self._intercept_sliderMoved)
         super().valueChanged.connect(self._intercept_valueChanged)
 
+        menu = QMenu(self)
+        ac = menu.addAction('Set Single Step')
+        ac.triggered.connect(self.dialogSingleStep)
+        ac = menu.addAction('Set Page Step')
+        ac.triggered.connect(self.dialogPageStep)
+        menu.addSeparator()
+        ac = menu.addAction("Left edge")
+        ac.triggered.connect(lambda: self.triggerAction(self.SliderToMinimum))
+        ac = menu.addAction("Right edge")
+        ac.triggered.connect(lambda: self.triggerAction(self.SliderToMaximum))
+        self.contextMenu = menu
+
+    @pyqtSlot(bool)
+    def dialogSingleStep(self, value):
+        mini = 1/self._scale
+        maxi = (self.maximum - self.minimum)/10
+        d, okPressed = QInputDialog.getDouble(self, "Single Step",
+                                              "Single Step:", self.singleStep,
+                                              mini, maxi, self._decimals)
+        if okPressed:
+            self.setSingleStep(d)
+
+    def dialogPageStep(self, value):
+        mini = 10/self._scale
+        maxi = (self.maximum - self.minimum)
+        d, okPressed = QInputDialog.getDouble(self, "Page Step", "Page Step:",
+                                              self.pageStep,
+                                              mini, maxi, self._decimals)
+        if okPressed:
+            self.setPageStep(d)
+
+    def contextMenuEvent(self, ev):
+        self.contextMenu.exec_(ev.globalPos())
+
     def getDecimals(self):
         return self._decimals
-        
+
     def setDecimals(self, value):
-        mini = self.minimum
-        maxi = self.maximum
-        sgstep = self.singleStep
-        pgstep = self.pageStep
-        val = self.value
-        slpos = self.sliderPosition
+        mini = self.getMinimum()
+        maxi = self.getMaximum()
+        sgstep = self.getSingleStep()
+        pgstep = self.getPageStep()
+        val = self.getValue()
+        slpos = self.getSliderPosition()
 
         self._decimals = value
-        self._scale = float(10**value)
-        self.minimum = mini
-        self.maximum = maxi
-        self.singleStep = sgstep
-        self.pageStep = pgstep
-        self.value = val
-        self.sliderPosition = slpos
-    decimals = pyqtProperty(float, getDecimals, setDecimals)
+        self._scale = 10**value
+        self.setMinimum(mini)
+        self.setMaximum(maxi)
+        self.setSingleStep(sgstep)
+        self.setPageStep(pgstep)
+        self.setValue(val)
+        self.setSliderPosition(slpos)
+
+    decimals = pyqtProperty(int, getDecimals, setDecimals)
 
     def getMinimum(self):
         return super().minimum()/self._scale
@@ -54,7 +90,14 @@ class QDoubleScrollBar(QScrollBar):
         return super().singleStep()/self._scale
 
     def setSingleStep(self, value):
-        super().setSingleStep(round(value*self._scale))
+        val = round(value*self._scale)
+        rang = super().maximum() - super().minimum()
+        if not val:
+            super().setSingleStep(1)
+        elif val > round(rang/10):
+            super().setSingleStep(round(rang/10))
+        else:
+            super().setSingleStep(val)
 
     singleStep = pyqtProperty(float, getSingleStep, setSingleStep)
 
@@ -62,24 +105,16 @@ class QDoubleScrollBar(QScrollBar):
         return super().pageStep()/self._scale
 
     def setPageStep(self, value):
-        super().setPageStep(round(value*self._scale))
+        val = round(value*self._scale)
+        rang = super().maximum() - super().minimum()
+        if val < 10:
+            super().setPageStep(10)
+        elif val > round(rang):
+            super().setPageStep(round(rang))
+        else:
+            super().setPageStep(val)
 
     pageStep = pyqtProperty(float, getPageStep, setPageStep)
-
-    def keyPressEvent(self, event):
-        singlestep = self.getSingleStep()
-        pagestep = self.getPageStep()
-        mini = self.getMinimum()
-        maxi = self.getMaximum()
-        max_single = maxi - mini
-        if (event.key() == Qt.Key_Plus) and (20*singlestep < max_single):
-            self.setSingleStep(2*singlestep)
-            self.setPageStep(2*pagestep)
-        elif (event.key() == Qt.Key_Minus) and (singlestep/self._scale > 2):
-            self.setSingleStep(0.5*singlestep)
-            self.setPageStep(0.5*pagestep)
-        else:
-            super().keyPressEvent(event)
 
     def getValue(self):
         return super().value()/self._scale
@@ -87,6 +122,7 @@ class QDoubleScrollBar(QScrollBar):
     @pyqtSlot(float)
     def setValue(self, value):
         super().setValue(round(value*self._scale))
+
     value = pyqtProperty(float, getValue, setValue)
 
     def getSliderPosition(self):
@@ -94,7 +130,20 @@ class QDoubleScrollBar(QScrollBar):
 
     def setSliderPosition(self, value):
         super().setSliderPosition(round(value*self._scale))
+
     sliderPosition = pyqtProperty(float, getSliderPosition, setSliderPosition)
+
+    def keyPressEvent(self, event):
+        singlestep = self.getSingleStep()
+        pagestep = self.getPageStep()
+        if (event.key() == Qt.Key_Plus):
+            self.setSingleStep(10*singlestep)
+            self.setPageStep(10*pagestep)
+        elif (event.key() == Qt.Key_Minus):
+            self.setSingleStep(0.1*singlestep)
+            self.setPageStep(0.1*pagestep)
+        else:
+            super().keyPressEvent(event)
 
     @pyqtSlot(float, float)
     def setRange(self, mini, maxi):

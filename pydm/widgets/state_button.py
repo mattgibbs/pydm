@@ -1526,7 +1526,7 @@ class PyDMStateButton(QAbstractButton):
 
     def sizeHint(self):
         """Return size hint to define size on initialization."""
-        return QSize(48, 24)
+        return QSize(72, 36)
 
     def paintEvent(self, event):
         """Treat appearence changes based on connection state and value."""
