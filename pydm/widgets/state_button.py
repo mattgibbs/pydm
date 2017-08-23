@@ -1464,6 +1464,8 @@ class PyDMStateButton(QAbstractButton):
         value = int(value)
         if self._bit >= 0:
             value = (value >> self._bit) & 1
+        if value:
+            self.setChecked(True)
         self.update()
 
     @pyqtSlot(_np.ndarray)
