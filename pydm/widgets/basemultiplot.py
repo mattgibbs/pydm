@@ -200,6 +200,7 @@ class BaseMultiPlot(PlotWidget):
         self.setShowXGrid(False)
         self._show_y_grid = None
         self.setShowYGrid(False)
+        self._axislabel_fontsize = '10pt'
 
     # Handle view resizing
     def updateViews(self):
@@ -235,6 +236,22 @@ class BaseMultiPlot(PlotWidget):
     yAxisCount = pyqtProperty(int,getYAxisCount,setYAxisCount,resetYAxisCount)
 
     #Plot properties
+    def getAxisLabelFontSize(self):
+        return self._axislabel_fontsize
+    def setAxisLabelFontSize(self, value):
+        self._axislabel_fontsize = value
+        self.setXAxis1Label(self._XAxis1Label)
+        self.setYAxis1Label(self._YAxis1Label)
+        self.setYAxis2Label(self._YAxis2Label)
+        self.setYAxis3Label(self._YAxis3Label)
+    def resetAxisLabelFontSize(self):
+        self._axislabel_fontsize = '10pt'
+        self.setXAxis1Label(self._XAxis1Label)
+        self.setYAxis1Label(self._YAxis1Label)
+        self.setYAxis2Label(self._YAxis2Label)
+        self.setYAxis3Label(self._YAxis3Label)
+    axisFontSize = pyqtProperty(str, getAxisLabelFontSize, setAxisLabelFontSize, resetAxisLabelFontSize)
+
     def getAutoRangeXAxis(self):
         return self._auto_range_XAxis
     def setAutoRangeXAxis(self, value):
@@ -312,7 +329,9 @@ class BaseMultiPlot(PlotWidget):
         return self._XAxis1Label
     def setXAxis1Label(self, label):
         self._XAxis1Label = label
-        self.plotItem.getAxis('bottom').setLabel(self._XAxis1Label)
+        args = {'font-size': self._axislabel_fontsize}
+        self.plotItem.getAxis('bottom').setLabel(self._XAxis1Label, **args)
+        self.setXAxis1ShowLabel(self._XAxis1ShowLabel)
     XAxis1Label = pyqtProperty(str,getXAxis1Label,setXAxis1Label)
 
     def getXAxis1ShowLabel(self):
@@ -328,7 +347,9 @@ class BaseMultiPlot(PlotWidget):
         return self._YAxis1Label
     def setYAxis1Label(self, label):
         self._YAxis1Label = label
-        self.plotItem.getAxis('left').setLabel(self._YAxis1Label)
+        args = {'font-size': self._axislabel_fontsize}
+        self.plotItem.getAxis('left').setLabel(self._YAxis1Label, **args)
+        self.setYAxis1ShowLabel(self._YAxis1ShowLabel)
     YAxis1Label = pyqtProperty(str,getYAxis1Label,setYAxis1Label)
 
     def getYAxis1ShowLabel(self):
@@ -344,7 +365,9 @@ class BaseMultiPlot(PlotWidget):
         return self._YAxis2Label
     def setYAxis2Label(self, label):
         self._YAxis2Label = label
-        self.plotItem.getAxis('right').setLabel(self._YAxis2Label)
+        args = {'font-size': self._axislabel_fontsize}
+        self.plotItem.getAxis('right').setLabel(self._YAxis2Label, **args)
+        self.setYAxis2ShowLabel(self._YAxis2ShowLabel)
     YAxis2Label = pyqtProperty(str,getYAxis2Label,setYAxis2Label)
 
     def getYAxis2ShowLabel(self):
@@ -360,7 +383,9 @@ class BaseMultiPlot(PlotWidget):
         return self._YAxis3Label
     def setYAxis3Label(self, label):
         self._YAxis3Label = label
-        self._YAxis3.setLabel(self._YAxis3Label)
+        args = {'font-size': self._axislabel_fontsize}
+        self._YAxis3.setLabel(self._YAxis3Label, **args)
+        self.setYAxis3ShowLabel(self._YAxis3ShowLabel)
     YAxis3Label = pyqtProperty(str,getYAxis3Label,setYAxis3Label)
 
     def getYAxis3ShowLabel(self):
