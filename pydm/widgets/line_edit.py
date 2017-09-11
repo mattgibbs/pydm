@@ -19,7 +19,8 @@ class PyDMLineEdit(QLineEdit):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, init_channel=None):
+    def __init__(self, parent=None, init_channel=None, scale=1, unit=None,
+                 prec=None):
         """Initialize the instance."""
         super(PyDMLineEdit, self).__init__(parent)
         self._value = None
@@ -28,16 +29,28 @@ class PyDMLineEdit(QLineEdit):
         self._channel = init_channel
 
         self._useprec = True
-        self._prec = None
+        if prec is None:
+            self._prec_from_pv = True
+            self._prec = None
+        else:
+            self._prec_from_pv = False
+            self._prec = '{{:.{:}f}}'.format(str(prec))
         self._connected = False
 
         self._userformat = None
 
-        self._scale = 1
+        self._scale = scale
 
-        self._useunits = True
-        self._units = None
-        self._unitformat = None
+        self._useunits = True  # Show units
+        if unit is None:
+            self._unit_from_pv = True
+            self._units = None
+            self._unitformat = None
+        else:
+            self._unit_from_pv = False
+            self._units = unit
+            self._unitformat = '{{:}} {:}'.format(unit)
+
         self.setEnabled(False)
 
         self.returnPressed.connect(self.sendValue)
@@ -48,6 +61,37 @@ class PyDMLineEdit(QLineEdit):
         self.menu = QMenu(self)
         self.unitMenu = self.menu.addMenu('Convert Units')
         self.createUnitOptions()
+
+    @pyqtProperty(str)
+    def unit(self):
+        """Unit set by the user. If unset will get from PV."""
+        return self._units
+
+    @unit.setter
+    def unit(self, unit):
+        self._unit_from_pv = False
+        self._units = str(unit)
+        self._unitformat = '{{:}} {:}'.format(unit)
+
+    @pyqtProperty(int)
+    def scale(self):
+        """Scale value before displaying."""
+        return self._scale
+
+    @scale.setter
+    def scale(self, value):
+        self._scale = value
+
+    @pyqtProperty(int)
+    def prec(self):
+        """Number of decimal fields to be shown."""
+        return self._prec
+
+    @prec.setter
+    def prec(self, value):
+        if value > 0:
+            self._prec_from_pv = False
+            self._prec = '{{:.{:}f}}'.format(str(value))
 
     @pyqtProperty(str)
     def channel(self):
@@ -199,7 +243,7 @@ class PyDMLineEdit(QLineEdit):
         to include after the decimal place for float and int channel values.
         Receiving a new value for the precision causes the display to reset.
         """
-        if value >= 0:
+        if self._prec_from_pv and value >= 0:
             self._prec = '{{:.{:}f}}'.format(str(value))
             self.setDisplay()
 
@@ -212,11 +256,12 @@ class PyDMLineEdit(QLineEdit):
         attribute. Receiving a new value for the unit causes the display to
         reset.
         """
-        self._units = str(unit)
-        self._scale = 1
-        self._unitformat = '{{:}} {:}'.format(unit)
-        self.setDisplay()
-        self.createUnitOptions()
+        if self._unit_from_pv:
+            self._units = str(unit)
+            self._scale = 1
+            self._unitformat = '{{:}} {:}'.format(unit)
+            self.setDisplay()
+            self.createUnitOptions()
 
     def createUnitOptions(self):
         """
