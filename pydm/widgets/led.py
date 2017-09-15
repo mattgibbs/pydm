@@ -15,7 +15,6 @@ class PyDMLed(QLed):
 
     def __init__(self, parent=None, init_channel='', bit=-1, enum_map=None):
         super(PyDMLed, self).__init__(parent)
-        self._value = None
         self.pvbit = bit
 
         self._enum_strings = None
@@ -27,6 +26,7 @@ class PyDMLed(QLed):
         self._channels = None
         self._channel = init_channel
         self.setEnabled(False)
+        self.setToolTip(init_channel)
 
     @pyqtProperty(int)
     def pvbit(self): return self._bit
@@ -88,7 +88,8 @@ class PyDMLed(QLed):
     def enumStringsChanged(self, enum_strings):
         if enum_strings != self._enum_strings:
             self._enum_strings = enum_strings
-            self.receiveValue(self._value)
+            if self.m_value is not None:
+                self.receiveValue(self.m_value)
 
     def getChannel(self):
         return str(self._channel)
