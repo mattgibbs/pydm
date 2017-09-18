@@ -19,8 +19,7 @@ class PyDMLineEdit(QLineEdit):
     connected_signal = pyqtSignal()
     disconnected_signal = pyqtSignal()
 
-    def __init__(self, parent=None, init_channel=None, scale=1, unit=None,
-                 prec=None):
+    def __init__(self, parent=None, init_channel=None, unit=None, prec=None):
         """Initialize the instance."""
         super(PyDMLineEdit, self).__init__(parent)
         self._value = None
@@ -39,17 +38,14 @@ class PyDMLineEdit(QLineEdit):
 
         self._userformat = None
 
-        self._scale = scale
-
+        self._scale = 1
         self._useunits = True  # Show units
         if unit is None:
             self._unit_from_pv = True
             self._units = None
             self._unitformat = None
         else:
-            self._unit_from_pv = False
-            self._units = unit
-            self._unitformat = '{{:}} {:}'.format(unit)
+            self.unit = unit
 
         self.setEnabled(False)
 
@@ -69,18 +65,15 @@ class PyDMLineEdit(QLineEdit):
 
     @unit.setter
     def unit(self, unit):
-        self._unit_from_pv = False
-        self._units = str(unit)
-        self._unitformat = '{{:}} {:}'.format(unit)
-
-    @pyqtProperty(int)
-    def scale(self):
-        """Scale value before displaying."""
-        return self._scale
-
-    @scale.setter
-    def scale(self, value):
-        self._scale = value
+        if utilities.find_unit(unit) is None:
+            raise AttributeError('Unit is not defined')
+        else:
+            self._unit_from_pv = False
+            self._userunits = str(unit)
+            self._unitformat = '{{:}} {:}'.format(unit)
+            scale = utilities.convert(self._units, unit)
+            if scale:
+                self._scale = scale
 
     @pyqtProperty(int)
     def prec(self):
@@ -256,12 +249,16 @@ class PyDMLineEdit(QLineEdit):
         attribute. Receiving a new value for the unit causes the display to
         reset.
         """
-        if self._unit_from_pv:
+        if unit != self._units:
             self._units = str(unit)
-            self._scale = 1
-            self._unitformat = '{{:}} {:}'.format(unit)
-            self.setDisplay()
             self.createUnitOptions()
+
+            if self._unit_from_pv:
+                self._scale = 1
+                self._unitformat = '{{:}} {:}'.format(self._units)
+            else:
+                self._scale = utilities.convert(self._units, self._userunits)
+            self.setDisplay()
 
     def createUnitOptions(self):
         """
@@ -297,13 +294,9 @@ class PyDMLineEdit(QLineEdit):
         if not self._units:
             return None
 
-        scale = utilities.convert(str(self._units), unit)
-        if scale:
-            self._scale = scale*float(self._scale)
-            self._units = unit
-            self._unitformat = '{{:}} {:}'.format(unit)
-            self.clearFocus()
-            self.setDisplay()
+        self.unit = unit
+        self.clearFocus()
+        self.setDisplay()
 
     def launchMenu(self, point):
         """Launch the context menu with the appropriate unit conversions."""

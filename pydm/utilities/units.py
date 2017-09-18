@@ -1,71 +1,78 @@
 from scipy import constants
 
 
-UNITS = {'length':   {'m'   : 1,
-                      'cm'  : constants.centi,
-                      'mm'  : constants.milli,
-                      'um'  : constants.micro,
-                      'nm'  : constants.nano,
-                      'pm'  : constants.pico,
-                      'in'  : constants.inch,
-                      'ft'  : constants.foot,
-                      'yds' : constants.yard,
-                     },
-          'time':    {'s'     : 1,
-                      'ms'    : constants.milli,
-                      'us'    : constants.micro,
-                      'ns'    : constants.nano,
-                      'min'   : constants.minute,
-                      'hr'    : constants.hour,
-                      'weeks' : constants.week,
-                      'days'  : constants.day,
-                     }
-        }
+UNITS = {'length':   {'m': 1,
+                      'cm': constants.centi,
+                      'mm': constants.milli,
+                      'um': constants.micro,
+                      'nm': constants.nano,
+                      'pm': constants.pico,
+                      'in': constants.inch,
+                      'ft': constants.foot,
+                      'yds': constants.yard,
+                      },
+         'time':     {'s': 1,
+                      'ms': constants.milli,
+                      'us': constants.micro,
+                      'ns': constants.nano,
+                      'min': constants.minute,
+                      'hr': constants.hour,
+                      'weeks': constants.week,
+                      'days': constants.day,
+                      },
+         'angle':    {'rad': 1,
+                      'mrad': constants.milli,
+                      'urad': constants.micro,
+                      'nrad': constants.nano,
+                      },
+         'voltage':   {'V': 1,
+                       'mV': constants.milli,
+                       'uV': constants.micro,
+                       },
+         'current':   {'A': 1,
+                       'mA': constants.milli,
+                       'uA': constants.micro,
+                       }
+         }
+
+
 def find_unittype(unit):
-    """
-    Find the type of a unit string
-    """
-    for type in UNITS.keys():
-        if unit in UNITS[type].keys():
-            return type
+    """Find the type of a unit string."""
+    for unittype in UNITS.keys():
+        if unit in UNITS[unittype].keys():
+            return unittype
     return None
 
 
 def find_unit(unit):
-    """
-    Find the conversion of a unit string
-    """
-    type = find_unittype(unit)
-    if type:
-        return UNITS[type][unit]
+    """Find the conversion of a unit string."""
+    unittype = find_unittype(unit)
+    if unittype:
+        return UNITS[unittype][unit]
     else:
         return None
 
 
-def convert(unit,desired):
-    """
-    Find the conversion rate of two different unit strings
-    """
+def convert(unit, desired):
+    """Find the conversion rate of two different unit strings."""
     current = find_unit(unit)
-    final   = find_unit(desired)
+    final = find_unit(desired)
 
     if find_unittype(unit) != find_unittype(desired):
         return None
 
     if current and final:
         return current/final
-    
     else:
         return None
 
+
 def find_unit_options(unit):
-    """
-    Find the options for a given unit
-    """
-    type = find_unittype(unit)
-    if type:
-        units = [choice for choice,value in 
-                 sorted(UNITS[type].items(),key=lambda x: 1/x[1])]
+    """Find the options for a given unit."""
+    unittype = find_unittype(unit)
+    if unittype:
+        units = [choice for choice, value in
+                 sorted(UNITS[unittype].items(), key=lambda x: 1/x[1])]
         return units
     else:
         return None
