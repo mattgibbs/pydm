@@ -1,3 +1,5 @@
+"""PyDMLineEdit Module."""
+
 from functools import partial
 import numpy as _np
 from ..PyQt.QtGui import QLineEdit, QMenu
@@ -27,13 +29,14 @@ class PyDMLineEdit(QLineEdit):
         self._channeltype = None
         self._channel = init_channel
 
-        self._useprec = True
         if prec is None:
             self._prec_from_pv = True
-            self._prec = None
+            self._precformat = None
+            self._prec = 0
         else:
             self._prec_from_pv = False
-            self._prec = '{{:.{:}f}}'.format(str(prec))
+            self._precformat = '{{:.{:}f}}'.format(str(prec))
+            self._prec = prec
         self._connected = False
 
         self._userformat = None
@@ -82,9 +85,10 @@ class PyDMLineEdit(QLineEdit):
 
     @prec.setter
     def prec(self, value):
-        if value > 0:
+        if value >= 0:
+            self._prec = value
             self._prec_from_pv = False
-            self._prec = '{{:.{:}f}}'.format(str(value))
+            self._precformat = '{{:.{:}f}}'.format(str(value))
 
     @pyqtProperty(str)
     def channel(self):
@@ -116,12 +120,12 @@ class PyDMLineEdit(QLineEdit):
         It is also important to note, that if the value of the channel is a
         String, the choice of True or False will have no affect on the display.
         """
-        return self._useprec
+        return self._prec_from_pv
 
     @usePrecision.setter
     def usePrecision(self, choice):
-        if self._useprec != choice:
-            self._useprec = choice
+        if self._prec_from_pv != choice:
+            self._prec_from_pv = choice
 
     @pyqtProperty(bool)
     def showUnits(self):
@@ -237,7 +241,8 @@ class PyDMLineEdit(QLineEdit):
         Receiving a new value for the precision causes the display to reset.
         """
         if self._prec_from_pv and value >= 0:
-            self._prec = '{{:.{:}f}}'.format(str(value))
+            self._prec = value
+            self._precformat = '{{:.{:}f}}'.format(str(value))
             self.setDisplay()
 
     @pyqtSlot(str)
@@ -321,8 +326,8 @@ class PyDMLineEdit(QLineEdit):
         if not isinstance(value, str):
             if self._scale and value:
                 value *= self._channeltype(self._scale)
-            if self._prec and self._useprec and value:
-                value = self._prec.format(value)
+            if self._prec > 0 and value is not None or self._prec_from_pv:
+                value = self._precformat.format(value)
             else:
                 value = str(value)
 
@@ -348,13 +353,14 @@ class PyDMLineEdit(QLineEdit):
 
     def channels(self):
         """Method called by PyDMApplication to initialize the connections."""
-        return [PyDMChannel(address=self.channel,
-                            value_slot=self.receiveValue,
-                            value_signal=self.send_value_signal,
-                            waveform_slot=self.receiveValue,
-                            waveform_signal=self.send_value_signal[_np.ndarray],
-                            connection_slot=self.connectionChanged,
-                            prec_slot=self.receivePrecision,
-                            unit_slot=self.receiveUnits,
-                            write_access_slot=self.writeAccessChanged,
-                            )]
+        return [PyDMChannel(
+                    address=self.channel,
+                    value_slot=self.receiveValue,
+                    value_signal=self.send_value_signal,
+                    waveform_slot=self.receiveValue,
+                    waveform_signal=self.send_value_signal[_np.ndarray],
+                    connection_slot=self.connectionChanged,
+                    prec_slot=self.receivePrecision,
+                    unit_slot=self.receiveUnits,
+                    write_access_slot=self.writeAccessChanged,
+                    )]
