@@ -32,7 +32,6 @@ class PyDMLineEdit(QLineEdit):
 
         if prec is None:
             self._prec_from_pv = True
-            self._precformat = None
             self._prec = 0
         else:
             self._prec_from_pv = False
@@ -334,7 +333,7 @@ class PyDMLineEdit(QLineEdit):
         if not isinstance(value, str):
             if self._scale and value:
                 value *= self._channeltype(self._scale)
-            if (self._prec > 0  or self._prec_from_pv) and value is not None:
+            if (self._prec > 0 or self._prec_from_pv) and value is not None:
                 value = self._precformat.format(value)
             else:
                 value = str(value)
