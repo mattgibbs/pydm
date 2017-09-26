@@ -223,6 +223,8 @@ class PyDMLineEdit(QLineEdit):
         self.send_value_signal[self._channeltype]\
             .emit(self._channeltype(send_value))
 
+        self.clearFocus()
+
     @pyqtSlot(bool)
     def connectionChanged(self, conn):
         """Change the PyDMLineEdit to read only if write access is denied."""
@@ -345,6 +347,17 @@ class PyDMLineEdit(QLineEdit):
         self._display = str(value)
         if not self.hasFocus():
             self.setText(self._display)
+
+    def focusInEvent(self, event):
+        value = self._value
+        if self._scale and value:
+            value *= self._channeltype(self._scale)
+        if (self._prec > 0 or self._prec_from_pv) and value is not None:
+            value = self._precformat.format(value)
+        else:
+            value = str(value)
+        self.setText(value)
+        super().focusInEvent(event)
 
     def focusOutEvent(self, event):
         """
