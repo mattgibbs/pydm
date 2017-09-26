@@ -5,6 +5,7 @@ import numpy as _np
 from ..PyQt.QtGui import QLineEdit, QMenu
 from ..PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
 from .channel import PyDMChannel
+import re
 from pydm import utilities
 
 
@@ -197,6 +198,7 @@ class PyDMLineEdit(QLineEdit):
         if self._channeltype is None:
             return
         send_value = str(self.text())
+        # print(send_value)
 
         if self._channeltype == _np.ndarray:
             send_value = _np.array([int(v) for v in send_value.split()])
@@ -204,15 +206,21 @@ class PyDMLineEdit(QLineEdit):
             return
 
         # Clean text of all formatting
-        if self._unitformat:
-            send_value = send_value.strip(self._unitformat)
+        if self._useunits and self._unitformat:
+            # send_value = send_value.strip(self._unitformat)
+            send_value = re.sub(self._units, "", send_value)
+        # print(send_value, self._unitformat)
 
         if self._userformat:
             send_value = send_value.strip(self._userformat)
+
         # Remove scale factor
         if self._scale and self._channeltype != str:
             send_value = (self._channeltype(send_value)
                           / self._channeltype(self._scale))
+        # print(send_value, self._scale)
+
+        # print(send_value)
         self.send_value_signal[self._channeltype]\
             .emit(self._channeltype(send_value))
 
