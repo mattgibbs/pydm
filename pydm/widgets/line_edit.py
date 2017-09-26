@@ -31,12 +31,11 @@ class PyDMLineEdit(QLineEdit):
 
         if prec is None:
             self._prec_from_pv = True
-            self._precformat = None
             self._prec = 0
         else:
             self._prec_from_pv = False
-            self._precformat = '{{:.{:}f}}'.format(str(prec))
             self._prec = prec
+        self._precformat = '{{:.{:}f}}'.format(str(prec))
         self._connected = False
 
         self._userformat = None
