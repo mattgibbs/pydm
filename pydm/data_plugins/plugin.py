@@ -2,8 +2,7 @@ from numpy import ndarray
 from ..PyQt.QtCore import pyqtSlot, pyqtSignal, QObject, Qt
 
 class PyDMConnection(QObject):
-    new_value_signal =        pyqtSignal([float],[int],[str])
-    new_waveform_signal =     pyqtSignal(ndarray)
+    new_value_signal =        pyqtSignal([float],[int],[str], [ndarray])
     connection_state_signal = pyqtSignal(bool)
     new_severity_signal =     pyqtSignal(int)
     write_access_signal =     pyqtSignal(bool)
@@ -11,10 +10,8 @@ class PyDMConnection(QObject):
     # unit_signal =             pyqtSignal(str)
     unit_signal =             pyqtSignal([str],[bytes])
     prec_signal =             pyqtSignal(int)
-    count_signal =            pyqtSignal(int)
-
-    upper_disp_limit_signal =      pyqtSignal([float], [int])
-    lower_disp_limit_signal =      pyqtSignal([float], [int])
+    upper_ctrl_limit_signal = pyqtSignal([float],[int])
+    lower_ctrl_limit_signal = pyqtSignal([float],[int])
 
     def __init__(self, channel, address, parent=None):
         super(PyDMConnection, self).__init__(parent)
@@ -25,21 +22,22 @@ class PyDMConnection(QObject):
         if channel.connection_slot is not None:
             self.connection_state_signal.connect(channel.connection_slot, Qt.QueuedConnection)
         if channel.value_slot is not None:
-          try:
-              self.new_value_signal[int].connect(channel.value_slot, Qt.QueuedConnection)
-          except TypeError:
-              pass
-          try:
-              self.new_value_signal[float].connect(channel.value_slot, Qt.QueuedConnection)
-          except TypeError:
-              pass
-          try:
-              self.new_value_signal[str].connect(channel.value_slot, Qt.QueuedConnection)
-          except TypeError:
-              pass
-
-        if channel.waveform_slot is not None:
-            self.new_waveform_signal.connect(channel.waveform_slot, Qt.QueuedConnection)
+            try:
+                self.new_value_signal[int].connect(channel.value_slot, Qt.QueuedConnection)
+            except TypeError:
+                pass
+            try:
+                self.new_value_signal[float].connect(channel.value_slot, Qt.QueuedConnection)
+            except TypeError:
+                pass
+            try:
+                self.new_value_signal[str].connect(channel.value_slot, Qt.QueuedConnection)
+            except TypeError:
+                pass
+            try:
+                self.new_value_signal[ndarray].connect(channel.value_slot, Qt.QueuedConnection)
+            except TypeError:
+                pass
 
         if channel.severity_slot is not None:
             self.new_severity_signal.connect(channel.severity_slot, Qt.QueuedConnection)
@@ -53,15 +51,18 @@ class PyDMConnection(QObject):
         if channel.unit_slot is not None:
             self.unit_signal.connect(channel.unit_slot, Qt.QueuedConnection)
 
-        if channel.count_slot is not None:
-            self.count_signal.connect(channel.count_slot, Qt.QueuedConnection)
+        if channel.upper_ctrl_limit_slot is not None:
+            self.upper_ctrl_limit_signal.connect(channel.upper_ctrl_limit_slot, Qt.QueuedConnection)
+
+        if channel.lower_ctrl_limit_slot is not None:
+            self.lower_ctrl_limit_signal.connect(channel.lower_ctrl_limit_slot, Qt.QueuedConnection)
 
         if channel.prec_slot is not None:
             self.prec_signal.connect(channel.prec_slot, Qt.QueuedConnection)
 
         if channel.lower_disp_limit_slot is not None:
             self.lower_disp_limit_signal.connect(channel.lower_disp_limit_slot, Qt.QueuedConnection)
-            
+
         if channel.upper_disp_limit_slot is not None:
             self.upper_disp_limit_signal.connect(channel.upper_disp_limit_slot, Qt.QueuedConnection)
 
@@ -80,7 +81,7 @@ class PyDMPlugin(object):
         self.connections = {}
 
     def get_address(self, channel):
-        return str(channel.address.split(self.protocol)[1])
+        return str(channel.address.split(self.protocol + "://")[-1])
 
     def add_connection(self, channel):
         address = self.get_address(channel)
@@ -94,4 +95,4 @@ class PyDMPlugin(object):
         if address in self.connections:
             self.connections[address].remove_listener()
             if self.connections[address].listener_count < 1:
-              del self.connections[address]
+                del self.connections[address]

@@ -1,154 +1,179 @@
-from pydm.PyQt.QtGui import QDoubleSpinBox, QInputDialog
-from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
-from pydm.widgets.channel import PyDMChannel
+from ..PyQt.QtGui import QDoubleSpinBox, QApplication
+from ..PyQt.QtCore import pyqtProperty, QEvent, Qt
+from .base import PyDMWritableWidget
 
 
-class PyDMSpinBox(QDoubleSpinBox):
+class PyDMSpinbox(QDoubleSpinBox, PyDMWritableWidget):
+    """
+    A QDoubleSpinBox with support for Channels and more from PyDM.
 
-    value_changed_signal = pyqtSignal([int], [float], [str])
-    connected_signal = pyqtSignal()
-    disconnected_signal = pyqtSignal()
-
-    def __init__(self, parent=None, init_channel=None, limits_from_pv=False,
-                 alignment=Qt.AlignCenter, step=None, precision=2):
-        super(PyDMSpinBox, self).__init__(parent)
-
-        self.setFocusPolicy(Qt.StrongFocus)
-        self.setAlignment(alignment)
-        self.setDecimals(precision)
-        if not step:
-            self.setSingleStep(1/10**precision)
-        else:
-            self.setSingleStep(step)
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+    init_channel : str, optional
+        The channel to be used by the widget.
+    """
+    def __init__(self, parent=None, init_channel=None):
+        QDoubleSpinBox.__init__(self, parent)
+        PyDMWritableWidget.__init__(self, init_channel=init_channel)
+        self.valueBeingSet = False
         self.setEnabled(False)
+        self._show_step_exponent = True
+        self.step_exponent = 0
+        self.setDecimals(0)
+        self.app = QApplication.instance()
 
-        self._limits_from_pv = limits_from_pv
-        self._connected = False
-        self._channels = None
-        self._channel = init_channel
-        self._ch_typ = None
-        self._value = self.value()
-        self._update_tooltip()
+    def event(self, event):
+        """
+        Method invoked when an event of any nature happens on the
+        QDoubleSpinBox.
 
-        self.valueChanged.connect(self.value_changed)  # signal from spinbox
-        self.setKeyboardTracking(False)
-        self.setAccelerated(True)
+        For PyDMSpinBox we are interested on the Keypress events for:
+        - CTRL + Left/Right : Increase or Decrease the step exponent
+        - Up / Down : Add or Remove `singleStep` units to the value
+        - Return : Send the value to the channel using the `send_value_signal`
 
-    @pyqtSlot(bool)
-    def dialogSingleStep(self, value):
-        mini = 1/10**self.decimals()
-        maxi = (self.maximum() - self.minimum())/10
-        d, okP = QInputDialog.getDouble(self, "Single Step", "Single Step:",
-                                        self.singleStep(), mini, maxi,
-                                        self.decimals())
-        if okP:
-            self.setSingleStep(d)
-            self._update_tooltip()
+        Parameters
+        ----------
+        event : QEvent
+        """
+        if (event.type() == QEvent.KeyPress):
+            ctrl_hold = self.app.queryKeyboardModifiers() == Qt.ControlModifier
 
-    @pyqtSlot(bool)
-    def connectionStateChanged(self, connected):
-        self._connected = connected
-        self.setEnabled(connected)
-        if connected:
-            self.connected_signal.emit()
+            if ctrl_hold and (event.key() == Qt.Key_Left):
+                self.step_exponent = self.step_exponent + 1
+                self.update_step_size()
+                return True
+
+            if ctrl_hold and (event.key() == Qt.Key_Right):
+                self.step_exponent = self.step_exponent - 1
+
+                if self.step_exponent < -self.decimals():
+                    self.step_exponent = -self.decimals()
+
+                self.update_step_size()
+                return True
+
+            if (event.key() == Qt.Key_Up):
+                self.setValue(self.value + self.singleStep())
+                self.send_value()
+                return True
+
+            if (event.key() == Qt.Key_Down):
+                self.setValue(self.value - self.singleStep())
+                self.send_value()
+                return True
+
+            if (event.key() == Qt.Key_Return):
+                self.send_value()
+                return True
+
+        return super(PyDMSpinbox, self).event(event)
+
+    def update_step_size(self):
+        """
+        Update the Single Step size on the QDoubleSpinBox.
+        """
+        self.setSingleStep(10 ** self.step_exponent)
+        self.update_format_string()
+
+    def update_format_string(self):
+        """
+        Reconstruct the format string to be used when representing the
+        output value.
+
+        Returns
+        -------
+        format_string : str
+            The format string to be used including or not the precision
+            and unit
+        """
+        if self._show_units:
+            units = " {}".format(self._unit)
         else:
-            self.disconnected_signal.emit()
-        self._update_tooltip()
+            units = ""
 
-    def contextMenuEvent(self, ev):
-        menu = self.lineEdit().createStandardContextMenu()
-        menu.addSeparator()
-        ac = menu.addAction('Set Single Step')
-        ac.triggered.connect(self.dialogSingleStep)
-        menu.exec_(ev.globalPos())
-
-    def keyPressEvent(self, event):
-        singlestep = self.singleStep()
-        if (event.key() == Qt.Key_Plus):
-            self.setSingleStep(10*singlestep)
-            self._update_tooltip()
-        elif (event.key() == Qt.Key_Minus):
-            self.setSingleStep(0.1*singlestep)
-            self._update_tooltip()
+        if self._show_step_exponent:
+            self.setSuffix("{units} Step: 1E{exp}".format(
+                units=units, exp=self.step_exponent))
         else:
-            super().keyPressEvent(event)
+            self.setSuffix(units)
 
-    @pyqtSlot(str)
-    @pyqtSlot(int)
-    @pyqtSlot(float)
-    def receiveValue(self, value):
-        self._ch_typ = type(value)
-        self._value = value
-        self._valueBeingSet = True
-        self.setValue(float(value))
-        self._valueBeingSet = False
+    def value_changed(self, new_val):
+        """
+        Callback invoked when the Channel value is changed.
 
-    @pyqtSlot(float)
-    def value_changed(self, value):
-        ''' Emits a value changed signal '''
-        if self._connected and \
-           self._ch_typ is not None and \
-           not self._valueBeingSet:
-            self.value_changed_signal[self._ch_typ].emit(self._ch_typ(value))
+        Parameters
+        ----------
+        new_val : int or float
+            The new value from the channel.
+        """
+        super(PyDMSpinbox, self).value_changed(new_val)
+        self.valueBeingSet = True
+        self.setValue(new_val)
+        self.valueBeingSet = False
 
-    @pyqtSlot(float)
-    @pyqtSlot(int)
-    def receiveLowerLimit(self, value):
-        if self._limits_from_pv:
-            self.setMinimum(float(value))
-            self._update_tooltip()
+    def send_value(self):
+        """
+        Method invoked to send the current value on the QDoubleSpinBox to
+        the channel using the `send_value_signal`.
+        """
+        value = float(self.cleanText())
+        if not self.valueBeingSet:
+            self.send_value_signal[float].emit(value)
 
-    @pyqtSlot(float)
-    @pyqtSlot(int)
-    def receiveUpperLimit(self, value):
-        if self._limits_from_pv:
-            self.setMaximum(float(value))
-            self._update_tooltip()
+    def ctrl_limit_changed(self, which, new_limit):
+        """
+        Callback invoked when the Channel receives new control limit
+        values.
 
-    @pyqtSlot(int)
-    def receivePrec(self, value):
-        if self._limits_from_pv and value != self.decimals():
-            self.setDecimals(round(value))
-            self.setSingleStep(1/10**value)
-            self._update_tooltip()
+        Parameters
+        ----------
+        which : str
+            Which control limit was changed. "UPPER" or "LOWER"
+        new_limit : float
+            New value for the control limit
+        """
+        super(PyDMSpinbox, self).ctrl_limit_changed(which, new_limit)
+        if which == "UPPER":
+            self.setMaximum(new_limit)
+        else:
+            self.setMinimum(new_limit)
 
-    # Designer Properties
-    @pyqtProperty(str)
-    def channel(self):
-        return str(self._channel)
+    def precision_changed(self, new_precision):
+        """
+        Callback invoked when the Channel has new precision value.
+        This callback also triggers an update_format_string call so the
+        new precision value is considered.
 
-    @channel.setter
-    def channel(self, value):
-        if self._channel != value:
-            self._channel = str(value)
-            self._update_tooltip()
+        Parameters
+        ----------
+        new_precison : int or float
+            The new precision value
+        """
+        super(PyDMSpinbox, self).precision_changed(new_precision)
+        self.setDecimals(new_precision)
 
     @pyqtProperty(bool)
-    def limitsFromPV(self):
-        return bool(self._limits_from_pv)
+    def showStepExponent(self):
+        """
+        Whether to show or not the step exponent
 
-    @limitsFromPV.setter
-    def limitsFromPV(self, value):
-        if self._limits_from_pv != value:
-            self._limits_from_pv = bool(value)
+        Returns
+        -------
+        bool
+        """
+        return self._show_step_exponent
 
-    def channels(self):
-        if self._channels is None:
-            self._channels = [PyDMChannel(
-                address=self._channel,
-                connection_slot=self.connectionStateChanged,
-                value_slot=self.receiveValue,
-                value_signal=self.value_changed_signal,
-                lower_disp_limit_slot=self.receiveLowerLimit,
-                upper_disp_limit_slot=self.receiveUpperLimit,
-                prec_slot=self.receivePrec)]
-        return self._channels
+    @showStepExponent.setter
+    def showStepExponent(self, val):
+        """
+        Whether to show or not the step exponent
 
-    def _update_tooltip(self):
-        fmt = '{0:.' + '{0:d}'.format(self.decimals()) + 'f}'
-        toltp = (self._channel or '') + '\n'
-        if self.isEnabled():
-            toltp += 'min: ' + fmt.format(self.minimum()) + '\n'
-            toltp += 'max: ' + fmt.format(self.maximum()) + '\n'
-            toltp += 'step: ' + fmt.format(self.singleStep()) + '\n'
-        self.setToolTip(toltp)
+        Parameters
+        ----------
+        val : bool
+        """
+        self._show_step_exponent = val
+        self.update()

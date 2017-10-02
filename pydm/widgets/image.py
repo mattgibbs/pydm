@@ -1,258 +1,266 @@
-from ..PyQt.QtGui import QLabel, QApplication, QColor, QActionGroup
-from ..PyQt.QtCore import pyqtSignal, pyqtSlot, pyqtProperty, Q_ENUMS
-from pyqtgraph import ImageView, ImageItem, ColorMap
+from ..PyQt.QtGui import QActionGroup
+from ..PyQt.QtCore import pyqtSlot, pyqtProperty
+from pyqtgraph import ImageView
+from pyqtgraph import ColorMap
 import numpy as np
 from .channel import PyDMChannel
 from .colormaps import cmaps
+from .base import PyDMWidget
 
-READINGORDER = {'Fortranlike': 0, 'Clike': 1}
-aux = 0
-COLORMAP = {}
-for cm in cmaps:
-    COLORMAP[cm] = aux
-    aux += 1
+class PyDMImageView(ImageView, PyDMWidget):
+    """
+    A PyQtGraph ImageView with support for Channels and more from PyDM
 
-class PyDMImageView(ImageView):
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+    image_channel : str, optional
+        The channel to be used by the widget for the image data.
+    width_channel : str, optional
+        The channel to be used by the widget to receive the image width
+        information
+    """
 
-    #Tell Designer what signals are available.
-    __pyqtSignals__ = ("connected_signal()",
-                     "disconnected_signal()")
-
-    #Internal signals, used by the state machine
-    connected_signal = pyqtSignal()
-    disconnected_signal = pyqtSignal()
-
-    #enumMap for readingOrderMap
-    locals().update(**READINGORDER)
-
-    class readingOrderMap:
-        locals().update(**READINGORDER)
-
-    Q_ENUMS(readingOrderMap)
-
-    #enumMap for colormapMap
-    locals().update(**COLORMAP)
-
-    class colormapMap:
-        locals().update(**COLORMAP)
-
-    Q_ENUMS(colormapMap)
-
-    readingorderdict = {Fortranlike:    'F',
-                        Clike:          'C'}
-    colormapdict =     {magma:      cmaps['magma'],
-                        inferno:    cmaps['inferno'],
-                        plasma:     cmaps['plasma'],
-                        viridis:    cmaps['viridis'],
-                        jet:        cmaps['jet'],
-                        monochrome: cmaps['monochrome'],
-                        hot:        cmaps['hot']}
-
-    def __init__(self, parent=None, init_image_channel=None, init_width_channel=None,
-                 init_image_width=0, init_reading_order=0, init_colormap_index=0,
-                 init_normalize_data=False):
-        super(PyDMImageView, self).__init__(parent)
-        self._imagechannel = init_image_channel
-        self._widthchannel = init_width_channel
+    color_maps = cmaps
+    def __init__(self, parent=None, image_channel=None, width_channel=None):
+        ImageView.__init__(self, parent)
+        PyDMWidget.__init__(self)
+        self.axes = dict({'t': None, "x": 0, "y": 1, "c": None})
+        self._imagechannel = image_channel
+        self._widthchannel = width_channel
         self.image_waveform = np.zeros(0)
-        self.image_width = init_image_width
-        self._connected = False
-        self._normalize_data = init_normalize_data
-
-        #Hide some itens of the widget
+        self.image_width = 0
         self.ui.histogram.hide()
         del self.ui.histogram
         self.ui.roiBtn.hide()
         self.ui.menuBtn.hide()
-
-        #Set Color Map limits
         self.cm_min = 0.0
         self.cm_max = 255.0
-
-        #Reading order of numpy array data
-        self._readingOrder = init_reading_order
+        self.data_max_int = 255  # This is the max value for the image waveform's data type.  It gets set when the waveform updates.
+        self._colormapname = "inferno"
+        self._cm_colors = None
         self._needs_reshape = False
-
-        #Default Color Map
-        self._colormapindex = init_colormap_index
-        self._cm_colors = self.colormapdict[self._colormapindex]
-        self.setColorMap()
-
-        #Menu to change Color Map
+        self.setColorMapToPreset(self._colormapname)
         cm_menu = self.getView().getMenu(None).addMenu("Color Map")
         cm_group = QActionGroup(self)
-        for map_name in COLORMAP:
-          action = cm_group.addAction(map_name)
-          action.setCheckable(True)
-          action.index = COLORMAP[map_name]
-          cm_menu.addAction(action)
-          if action.index == self._colormapindex:
-            action.setChecked(True)
+        for map_name in self.color_maps:
+            action = cm_group.addAction(map_name)
+            action.setCheckable(True)
+            cm_menu.addAction(action)
+            if map_name == self._colormapname:
+                action.setChecked(True)
         cm_menu.triggered.connect(self.changeColorMap)
 
     def changeColorMap(self, action):
-        self.colormap = action.index
+        """
+        Method invoked by the colormap Action Menu that changes the
+        current colormap used to render the image.
 
-    def setColorMap(self, new_colormap=None):
-        if not new_colormap:
+        Parameters
+        ----------
+        action : QAction
+        """
+        self.setColorMapToPreset(str(action.text()))
+
+    @pyqtSlot(int)
+    def setColorMapMin(self, new_min):
+        """
+        Set the minimal value for the colormap
+
+        Parameters
+        ----------
+        new_min : int
+        """
+        if self.cm_min != new_min:
+            self.cm_min = new_min
+            if self.cm_min > self.cm_max:
+                self.cm_max = self.cm_min
+            self.setColorMap()
+
+    @pyqtSlot(int)
+    def setColorMapMax(self, new_max):
+        """
+        Set the maximum value for the colormap
+
+        Parameters
+        ----------
+        new_max : int
+        """
+        if self.cm_max != new_max:
+            if new_max >= self.data_max_int:
+                new_max = self.data_max_int
+            self.cm_max = new_max
+            if self.cm_max < self.cm_min:
+                self.cm_min = self.cm_max
+            self.setColorMap()
+
+    def setColorMapLimits(self, mn, mx):
+        """
+        Set the limit values for the colormap
+
+        Parameters
+        ----------
+        mn : int
+            The lower limit
+        mx : int
+            The upper limit
+        """
+        self.cm_max = mx
+        self.cm_min = mn
+        self.setColorMap()
+
+    def setColorMapToPreset(self, name):
+        """
+        Load a predefined colormap
+
+        Parameters
+        ----------
+        name : str
+        """
+        self._colormapname = str(name)
+        self._cm_colors = self.color_maps[str(name)]
+        self.setColorMap()
+
+    def setColorMap(self, cmap=None):
+        """
+        Update the image colormap
+
+        Parameters
+        ----------
+        cmap : ColorMap
+        """
+        if not cmap:
             if not self._cm_colors.any():
                 return
-            pos = np.linspace(0.0, 1.0, num=len(self._cm_colors))
-            new_colormap = ColorMap(pos, self._cm_colors)
-        self.getView().setBackgroundColor(new_colormap.map(0))
-        lut = new_colormap.getLookupTable(0.0,1.0, alpha=False)
+            pos = np.linspace(0.0, 1.0, num=len(self._cm_colors))  # take default values
+            cmap = ColorMap(pos, self._cm_colors)
+        self.getView().setBackgroundColor(cmap.map(0))
+        lut = cmap.getLookupTable(0.0, 1.0, self.data_max_int, alpha=False)
         self.getImageItem().setLookupTable(lut)
-        self.getImageItem().setLevels([0.0,1.0])
+        self.getImageItem().setLevels([self.cm_min, float(min(self.cm_max, self.data_max_int))])  # set levels from min to max of image (may improve min here)
 
-    def setColorMapLimits(self, new_min, new_max):
-        self.setColorMapMax(new_max)
-        self.setColorMapMin(new_min)
-
-    #PyDMSlots
     @pyqtSlot(np.ndarray)
-    def receiveImageWaveform(self, new_waveform):
-        if new_waveform is None:
+    def image_value_changed(self, new_image):
+        """
+        Callback invoked when the Image Channel value is changed.
+        Reshape and display the new image.
+
+        Parameters
+        ----------
+        new_image : np.ndarray
+            The new image data as a flat array
+        """
+        if new_image is None:
             return
-        if self.image_width == 0:
-            if self._widthchannel is not None:
-                self.image_waveform = new_waveform
-                self._needs_reshape = True  #We'll wait to draw the image until we get the width from channel.
+        if len(new_image.shape) == 1:
+            if self.image_width == 0:
+                self.image_waveform = new_image
+                self._needs_reshape = True
+                # We'll wait to draw the image until we get the width.
                 return
-            else:
-                try:
-                    self.image_width = new_waveform[0]
-                    image = new_waveform[1:]
-                    self.image_waveform = image.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
-                except:
-                    raise Exception('Image width is not defined')
-        else:
-            if len(new_waveform.shape) == 1: # if widthchannel is not defined
-                self.image_waveform = new_waveform.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
-            elif len(new_waveform.shape) == 2: # if widthchannel is defined
-                self.image_waveform = new_waveform
+            self.image_waveform = new_image.reshape((int(self.image_width), -1), order='F')
+        elif len(new_image.shape) == 2:
+            self.image_waveform = new_image
+        self.data_max_int = np.amax(self.image_waveform)  # take the max value of the recieved image
+        self.setColorMap()  # to update the colormap immediately
         self.redrawImage()
 
     @pyqtSlot(int)
-    @pyqtSlot(float)
-    @pyqtSlot(str)
-    def receiveImageWidth(self, new_width):
+    def image_width_changed(self, new_width):
+        """
+        Callback invoked when the Image Width Channel value is changed.
+        Reshape the image data and triggers a ```redrawImage```
+
+        Parameters
+        ----------
+        new_width : int
+            The new image width
+        """
         if new_width is None:
             return
         self.image_width = int(new_width)
         if self._needs_reshape:
-            self.image_waveform = self.image_waveform.reshape((int(self.image_width),-1), order=self.readingorderdict[self._readingOrder])
+            self.image_waveform = self.image_waveform.reshape((int(self.image_width), -1), order='F')
             self._needs_reshape = False
         self.redrawImage()
 
     def redrawImage(self):
-        if len(self.image_waveform) <=0 or self.image_width <= 0: return
-        if self._normalize_data:
-            mini = self.image_waveform.min()
-            maxi = self.image_waveform.max()
-        else:
-            mini = self.cm_min
-            maxi = self.cm_max
-        image = (self.image_waveform - mini)/(maxi-mini)
-        self.getImageItem().setImage(image, autoLevels=False)
+        """
+        Set the image data into the ImageItem
+        """
+        if len(self.image_waveform) > 0 and self.image_width > 0:
+            self.getImageItem().setImage(self.image_waveform, autoLevels=False,
+                          autoHistogramRange=False, xvals=[0, 1])
 
-    @pyqtSlot(int)
-    def alarmStatusChanged(self, new_alarm_state):
-        # -2 to +2, -2 is LOLO, -1 is LOW, 0 is OK, etc.
-        pass
-
-    @pyqtSlot(int)
-    def alarmSeverityChanged(self, new_alarm_severity):
-        #0 = NO_ALARM, 1 = MINOR, 2 = MAJOR, 3 = INVALID
-        pass
-
-    @pyqtSlot(bool)
-    def connectionStateChanged(self, connected):
-        #false = disconnected, true = connected
-        self._connected = connected
-        if connected:
-          self.connected_signal.emit()
-        else:
-          self.disconnected_signal.emit()
-
-    #PyQt properties (the ones that show up in designer)
-    @pyqtProperty(int)
-    def imageWidth(self):
-        return self.image_width
-    @imageWidth.setter
-    def imageWidth(self,new_width):
-        if self.image_width != new_width and self._widthchannel is None:
-            self.image_width = new_width
-
-    @pyqtProperty(colormapMap)
-    def colormap(self):
-        return self._colormapindex
-    @colormap.setter
-    def colormap(self, new_colormapindex):
-        if self._colormapindex != new_colormapindex:
-            self._colormapindex = new_colormapindex
-            self._cm_colors = self.colormapdict[self._colormapindex]
-            self.setColorMap()
-
-    @pyqtProperty(bool)
-    def normalizeData(self):
-        return self._normalize_data
-    @normalizeData.setter
-    @pyqtSlot(bool)
-    def normalizeData(self, new_norm):
-        if self._normalize_data == new_norm: return
-        self._normalize_data = new_norm
-        self.redrawImage()
-
-    @pyqtProperty(int)
-    def colorMapMin(self):
-        return self.cm_min
-    @colorMapMin.setter
-    @pyqtSlot(int)
-    def colorMapMin(self, new_min):
-        if self.cm_min == new_min or new_min > self.cm_max: return
-        self.cm_min = new_min
-        self.setColorMap()
-
-    @pyqtProperty(int)
-    def colorMapMax(self):
-        return self.cm_max
-    @colorMapMax.setter
-    @pyqtSlot(int)
-    def colorMapMax(self, new_max):
-        if self.cm_max == new_max or new_max < self.cm_min: return
-        self.cm_max = new_max
-        self.setColorMap()
-
-    @pyqtProperty(readingOrderMap)
-    def readingOrder(self):
-        return self._readingOrder
-    @readingOrder.setter
-    def readingOrder(self,new_order):
-        if self._readingOrder != new_order:
-            self._readingOrder = new_order
+    def keyPressEvent(self, ev):
+        return
 
     @pyqtProperty(str)
     def imageChannel(self):
+        """
+        The channel address in use for the image data .
+
+        Returns
+        -------
+        str
+            Channel address
+        """
         return str(self._imagechannel)
+
     @imageChannel.setter
     def imageChannel(self, value):
+        """
+        The channel address in use for the image data .
+
+        Parameters
+        ----------
+        value : str
+            Channel address
+        """
         if self._imagechannel != value:
             self._imagechannel = str(value)
 
     @pyqtProperty(str)
     def widthChannel(self):
+        """
+        The channel address in use for the image width .
+
+        Returns
+        -------
+        str
+            Channel address
+        """
         return str(self._widthchannel)
+
     @widthChannel.setter
     def widthChannel(self, value):
+        """
+        The channel address in use for the image width .
+
+        Parameters
+        ----------
+        value : str
+            Channel address
+        """
         if self._widthchannel != value:
             self._widthchannel = str(value)
 
     def channels(self):
-        return [PyDMChannel(address=self.imageChannel,
-                            connection_slot=self.connectionStateChanged,
-                            waveform_slot=self.receiveImageWaveform,
-                            severity_slot=self.alarmSeverityChanged),
-                PyDMChannel(address=self.widthChannel,
-                            connection_slot=self.connectionStateChanged,
-                            value_slot=self.receiveImageWidth,
-                            severity_slot=self.alarmSeverityChanged)]
+        """
+        Returns the channels being used for this Widget.
+
+        Returns
+        -------
+        channels : list
+            List of PyDMChannel objects
+        """
+        return [
+            PyDMChannel(address=self.imageChannel,
+                        connection_slot=self.connectionStateChanged,
+                        value_slot=self.image_value_changed,
+                        severity_slot=self.alarmSeverityChanged),
+            PyDMChannel(address=self.widthChannel,
+                        connection_slot=self.connectionStateChanged,
+                        value_slot=self.image_width_changed,
+                        severity_slot=self.alarmSeverityChanged)]
