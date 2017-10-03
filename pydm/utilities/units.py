@@ -43,19 +43,21 @@ def find_unit(unit):
         return None
 
 
-def convert(unit, desired):
-    """Find the conversion rate of two different unit strings."""
+def convert(unit,desired):
+    """
+    Find the conversion rate of two different unit strings
+    """
     current = find_unit(unit)
-    final = find_unit(desired)
+    final   = find_unit(desired)
 
     if find_unittype(unit) != find_unittype(desired):
         return None
 
     if current and final:
         return current/final
+    
     else:
         return None
-
 
 def find_unit_options(unit):
     """
@@ -63,7 +65,7 @@ def find_unit_options(unit):
     """
     tp = find_unittype(unit)
     if tp:
-        units = [choice for choice,_ in
+        units = [choice for choice,_ in 
                  sorted(UNITS[tp].items(),key=lambda x: 1/x[1])]
         return units
     else:

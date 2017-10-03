@@ -1,5 +1,3 @@
-"""PyDMLineEdit Module."""
-
 from functools import partial
 from ..PyQt.QtGui import QLineEdit, QMenu
 from ..PyQt.QtCore import Qt
@@ -39,7 +37,7 @@ class PyDMLineEdit(QLineEdit, PyDMWritableWidget):
 
     def value_changed(self, new_val):
         """
-        Receive and update the PyDMLineEdit for a new channel value.
+        Receive and update the PyDMLineEdit for a new channel value
 
         The actual value of the input is saved as well as the type received.
         This also resets the PyDMLineEdit display text using
@@ -61,8 +59,6 @@ class PyDMLineEdit(QLineEdit, PyDMWritableWidget):
         before being sent back to the channel. This function is attached the
         ReturnPressed signal of the PyDMLineEdit
         """
-        if self._channeltype is None:
-            return
         send_value = str(self.text())
 
         # Clean text of all formatting
@@ -92,7 +88,7 @@ class PyDMLineEdit(QLineEdit, PyDMWritableWidget):
 
     def unit_changed(self, new_unit):
         """
-        Accept a unit to display with a channel's value.
+        Accept a unit to display with a channel's value
 
         The unit may or may not be displayed based on the :attr:`showUnits`
         attribute. Receiving a new value for the unit causes the display to
@@ -105,7 +101,7 @@ class PyDMLineEdit(QLineEdit, PyDMWritableWidget):
 
     def create_unit_options(self):
         """
-        Create the menu for displaying possible unit values.
+        Create the menu for displaying possible unit values
 
         The menu is filled with possible unit conversions based on the
         current PyDMLineEdit. If either the unit is not found in the by
@@ -128,7 +124,7 @@ class PyDMLineEdit(QLineEdit, PyDMWritableWidget):
 
     def apply_conversion(self, unit):
         """
-        Convert the current unit to a different one.
+        Convert the current unit to a different one
 
         This function will attempt to find a scalar to convert the current
         unit type to the desired one and reset the display with the new
@@ -188,17 +184,6 @@ class PyDMLineEdit(QLineEdit, PyDMWritableWidget):
 
         if not self.hasFocus():
             self.setText(self._display)
-
-    def focusInEvent(self, event):
-        value = self._value
-        if self._scale and value:
-            value *= self._channeltype(self._scale)
-        if (self._prec > 0 or self._prec_from_pv) and value is not None:
-            value = self._precformat.format(value)
-        else:
-            value = str(value)
-        self.setText(value)
-        super().focusInEvent(event)
 
     def focusOutEvent(self, event):
         """

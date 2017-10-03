@@ -344,15 +344,6 @@ class PyDMPushButton(QPushButton, PyDMWritableWidget):
             send_value = self.value + self.channeltype(self._pressValue)
             self.send_value_signal[self.channeltype].emit(send_value)
 
-    @pyqtSlot()
-    def sendWaveform(self):
-        if self._pressValue is None or self._value is None or not self._isArray: return
-        _pressValue = type(self._value[0])(self._pressValue)
-        if not self._relative:
-            self.send_waveform_signal.emit(_np.array(self._count*[_pressValue]))
-        else:
-            send_value = self._value + self._pressValue
-            self.send_waveform_signal.emit(send_value)
 
     @pyqtSlot(int)
     @pyqtSlot(float)

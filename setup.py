@@ -29,7 +29,7 @@ if "CONDA_PREFIX" not in environ:
     extras_require['PyQt5'] = ['PyQt5']
 else:
     print("******************************************************************")
-    print("*                              WARNING                           *")
+    print("*                              WARNING                           *") 
     print("******************************************************************")
     print("Installing at an Anaconda Environment, to avoid naming conflicts ")
     print("make sure you do:")

@@ -57,7 +57,7 @@ class WaveformCurveItem(PlotDataItem):
             self._color = color
         super(WaveformCurveItem, self).__init__(**kws)
         self.connect_points = connect_points
-
+    
     @property
     def color_string(self):
         """
@@ -70,7 +70,7 @@ class WaveformCurveItem(PlotDataItem):
         str
         """
         return str(utilities.colors.svg_color_from_hex(self.color.name(), hex_on_fail=True))
-
+    
     @color_string.setter
     def color_string(self, new_color_string):
         """
@@ -84,7 +84,7 @@ class WaveformCurveItem(PlotDataItem):
             The new string to use for the curve color.
         """
         self.color = QColor(str(new_color_string))
-
+            
     @property
     def color(self):
         """
@@ -95,7 +95,7 @@ class WaveformCurveItem(PlotDataItem):
         QColor
         """
         return self._color
-
+    
     @color.setter
     def color(self, new_color):
         """
@@ -112,7 +112,7 @@ class WaveformCurveItem(PlotDataItem):
         self._color = new_color
         if self.connect_points:
             self.setPen(self._color)
-
+    
     @property
     def connect_points(self):
         """
@@ -123,7 +123,7 @@ class WaveformCurveItem(PlotDataItem):
         bool
         """
         return self._connect_points
-
+    
     @connect_points.setter
     def connect_points(self, connect):
         """
@@ -138,25 +138,25 @@ class WaveformCurveItem(PlotDataItem):
             self.setPen(self._color)
         else:
             self.setPen(None)
-
+    
     @property
     def symbol(self):
         """
         The single-character code for the symbol drawn at each datapoint.
         See the documentation for pyqtgraph.PlotDataItem for possible values.
-
+        
         Returns
         -------
         str
         """
         return self.opts['symbol']
-
+    
     @symbol.setter
     def symbol(self, new_symbol):
         """
         The single-character code for the symbol drawn at each datapoint.
         See the documentation for pyqtgraph.PlotDataItem for possible values.
-
+        
         Parameters
         -------
         new_symbol: str
@@ -165,12 +165,12 @@ class WaveformCurveItem(PlotDataItem):
             self.setSymbol(new_symbol)
         else:
             self.setSymbol(None)
-
+    
     @property
     def x_address(self):
         """
         The address of the channel used to get the x axis waveform data.
-
+        
         Returns
         -------
         str
@@ -178,12 +178,12 @@ class WaveformCurveItem(PlotDataItem):
         if self.x_channel is None:
             return None
         return self.x_channel.address
-
+    
     @x_address.setter
     def x_address(self, new_address):
         """
         The address of the channel used to get the x axis waveform data.
-
+        
         Parameters
         -------
         new_address: str
@@ -192,12 +192,12 @@ class WaveformCurveItem(PlotDataItem):
             self.x_channel = None
             return
         self.x_channel = PyDMChannel(address=new_address, connection_slot=self.xConnectionStateChanged, value_slot=self.receiveXWaveform)
-
+    
     @property
     def y_address(self):
         """
         The address of the channel used to get the y axis waveform data.
-
+        
         Returns
         -------
         str
@@ -205,12 +205,12 @@ class WaveformCurveItem(PlotDataItem):
         if self.y_channel is None:
             return None
         return self.y_channel.address
-
+    
     @y_address.setter
     def y_address(self, new_address):
         """
         The address of the channel used to get the x axis wavefor data.
-
+        
         Parameters
         -------
         new_address: str
@@ -219,26 +219,26 @@ class WaveformCurveItem(PlotDataItem):
             self.y_channel = None
             return
         self.y_channel = PyDMChannel(address=new_address, connection_slot=self.yConnectionStateChanged, value_slot=self.receiveYWaveform)
-
+    
     def to_dict(self):
         """
-        Returns an OrderedDict representation with values for all properties
+        Returns an OrderedDict representation with values for all properties 
         needed to recreate this curve.
-
+        
         Returns
         -------
         OrderedDict
         """
         return OrderedDict([("y_channel", self.y_address), ("x_channel", self.x_address), ("name", self.name()), ("color", self.color_string), ("connect_points", self.connect_points), ("symbol", self.symbol)])
-
+    
     @pyqtSlot(bool)
     def xConnectionStateChanged(self, connected):
         pass
-
+        
     @pyqtSlot(bool)
     def yConnectionStateChanged(self, connected):
         pass
-
+    
     @pyqtSlot(np.ndarray)
     def receiveXWaveform(self, new_waveform):
         """
@@ -249,7 +249,7 @@ class WaveformCurveItem(PlotDataItem):
         #Don't redraw unless we already have Y data.
         if not (self.needs_new_x or self.needs_new_y):
             self.data_changed.emit()
-
+    
     @pyqtSlot(np.ndarray)
     def receiveYWaveform(self, new_waveform):
         """
@@ -259,7 +259,7 @@ class WaveformCurveItem(PlotDataItem):
         self.needs_new_y = False
         if self.x_channel is None or not (self.needs_new_x or self.needs_new_y):
             self.data_changed.emit()
-
+    
     def redrawCurve(self):
         """
         redrawCurve is called by the curve's parent plot whenever the curve needs to be
@@ -277,12 +277,12 @@ class WaveformCurveItem(PlotDataItem):
         self.setData(x=self.x_waveform, y=self.y_waveform)
         self.needs_new_x = True
         self.needs_new_y = True
-
+    
     def limits(self):
         """
         Limits of the data for this curve.
         Returns a nested tuple of limits: ((xmin, xmax), (ymin, ymax))
-
+        
         Returns
         -------
         tuple
@@ -294,7 +294,7 @@ class WaveformCurveItem(PlotDataItem):
             return ((0, len(self.y_waveform)), (float(np.amin(self.y_waveform) - yspan), float(np.amax(self.y_waveform) + yspan)))
         else:
             return ((np.amin(self.x_waveform), np.amax(self.x_waveform)), (np.amin(self.y_waveform), np.amax(self.y_waveform)))
-
+    
 class PyDMWaveformPlot(BasePlot):
     """
     PyDMWaveformPlot is a widget to plot one or more waveforms.  Each curve can plot
@@ -339,13 +339,13 @@ class PyDMWaveformPlot(BasePlot):
         init_channel_pairs = zip(init_x_channels, init_y_channels)
         for (x_chan, y_chan) in init_channel_pairs:
             self.addChannel(y_chan, x_channel=x_chan)
-
+    
     def addChannel(self, y_channel=None, x_channel=None, name=None, color=None, connect_points=True, symbol=None):
         """
         Add a new curve to the plot.  In addition to the arguments below,
-        all other keyword arguments are passed to the underlying
+        all other keyword arguments are passed to the underlying 
         pyqtgraph.PlotDataItem used to draw the curve.
-
+        
         Parameters
         ----------
         y_channel: str
@@ -368,11 +368,11 @@ class PyDMWaveformPlot(BasePlot):
         curve.data_changed.connect(self.redrawPlot)
         self.channel_pairs[(y_channel, x_channel)] = curve
         self.addCurve(curve, curve_color=color)
-
+    
     def removeChannel(self, curve):
         """
         Remove a curve from the plot.
-
+        
         Parameters
         ----------
         curve: WaveformCurveItem
@@ -380,12 +380,12 @@ class PyDMWaveformPlot(BasePlot):
         """
         curve.data_changed.disconnect(self.redrawPlot)
         self.removeCurve(curve)
-
+    
     def removeChannelAtIndex(self, index):
         """
         Remove a curve from the plot, given an index
         for a curve.
-
+        
         Parameters
         ----------
         index: int
@@ -393,7 +393,7 @@ class PyDMWaveformPlot(BasePlot):
         """
         curve = self._curves[index]
         self.removeChannel(curve)
-
+        
     def updateAxes(self):
         """
         Update the X and Y axes for the plot to fit all data in
@@ -415,9 +415,9 @@ class PyDMWaveformPlot(BasePlot):
             if plot_ymin is None or curve_ymin < plot_ymin:
                 plot_ymin = curve_ymin
             if plot_ymax is None or curve_ymax > plot_ymax:
-                plot_ymax = curve_ymax
+                plot_ymax = curve_ymax  
         self.plotItem.setLimits(xMin=plot_xmin, xMax=plot_xmax, yMin=plot_ymin, yMax=plot_ymax)
-
+    
     @pyqtSlot()
     def redrawPlot(self):
         """
@@ -427,26 +427,26 @@ class PyDMWaveformPlot(BasePlot):
         self.updateAxes()
         for curve in self._curves:
             curve.redrawCurve()
-
+    
     def clearCurves(self):
         """
         Remove all curves from the plot.
         """
         super(PyDMWaveformPlot, self).clear()
-
+    
     def getCurves(self):
         """
         Get a list of json representations for each curve.
         """
         return [json.dumps(curve.to_dict()) for curve in self._curves]
-
+     
     def setCurves(self, new_list):
         """
         Replace all existing curves with new ones.  This function
         is mostly used as a way to load curves from a .ui file, and
         almost all users will want to add curves through addChannel,
         not this method.
-
+        
         Parameters
         ----------
         new_list: list
@@ -463,13 +463,13 @@ class PyDMWaveformPlot(BasePlot):
             if color:
                 color = QColor(color)
             self.addChannel(d['y_channel'], d['x_channel'], name=d.get('name'), color=color, connect_points=d.get('connect_points', True), symbol=d.get('symbol'))
-
+        
     curves = pyqtProperty("QStringList", getCurves, setCurves)
-
+                    
     def channels(self):
         """
         Returns the list of channels used by all curves in the plot.
-
+        
         Returns
         -------
         list
@@ -478,32 +478,32 @@ class PyDMWaveformPlot(BasePlot):
         chans.extend([curve.y_channel for curve in self._curves])
         chans.extend([curve.x_channel for curve in self._curves if curve.x_channel is not None])
         return chans
-
+    
     # The methods for autoRangeX, minXRange, maxXRange, autoRangeY, minYRange, and maxYRange are
     # all defined in BasePlot, but we don't expose them as properties there, because not all plot
     # subclasses necessarily want them to be user-configurable in Designer.
     autoRangeX = pyqtProperty(bool, BasePlot.getAutoRangeX, BasePlot.setAutoRangeX, BasePlot.resetAutoRangeX, doc="""
     Whether or not the X-axis automatically rescales to fit the data.  If true, the
     values in minXRange and maxXRange are ignored.
-    """)
-
+    """)   
+    
     minXRange = pyqtProperty(float, BasePlot.getMinXRange, BasePlot.setMinXRange, doc="""
     Minimum X-axis value visible on the plot.
     """)
-
+    
     maxXRange = pyqtProperty(float, BasePlot.getMaxXRange, BasePlot.setMaxXRange, doc="""
     Maximum X-axis value visible on the plot.
     """)
-
+    
     autoRangeY = pyqtProperty(bool, BasePlot.getAutoRangeY, BasePlot.setAutoRangeY, BasePlot.resetAutoRangeY, doc="""
     Whether or not the Y-axis automatically rescales to fit the data.  If true, the
     values in minYRange and maxYRange are ignored.
     """)
-
+    
     minYRange = pyqtProperty(float, BasePlot.getMinYRange, BasePlot.setMinYRange, doc="""
     Minimum Y-axis value visible on the plot.
     """)
-
+    
     maxYRange = pyqtProperty(float, BasePlot.getMaxYRange, BasePlot.setMaxYRange, doc="""
     Maximum Y-axis value visible on the plot.
     """)
