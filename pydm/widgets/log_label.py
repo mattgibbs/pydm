@@ -1,21 +1,32 @@
 import datetime as _datetime
-from pydm.PyQt.QtGui import QListWidget, QColor
-from pydm.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot, pyqtProperty
-from pydm.widgets.channel import PyDMChannel
+from pydm.PyQt.QtGui import QListWidget
+from pydm.PyQt.QtCore import pyqtProperty
 from pydm.widgets.base import PyDMWidget
 
+
 class PyDMLogLabel(QListWidget, PyDMWidget):
+    """
+    A QListWidget with support for Channels and more from PyDM.
+
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+    init_channel : str, optional
+        The channel to be used by the widget.
+    """
 
     def __init__(self, parent=None, init_channel=None):
         QListWidget.__init__(self, parent)
         PyDMWidget.__init__(self, init_channel=init_channel)
-        self._max_count = 1000
+        self._buffer_size = 1000
         self._prepend_date_time
         self._date_time_prefix = '%Y/%M/%d-%H:%M:%S'
 
     def value_changed(self, new_value):
         """
         Callback invoked when the Channel value is changed.
+
         Sets the value of new_value accordingly at the Label.
 
         Parameters
@@ -25,7 +36,7 @@ class PyDMLogLabel(QListWidget, PyDMWidget):
         """
         super(PyDMLogLabel, self).value_changed(new_value)
 
-        if self.count() > self._max_count:
+        if self.count() > self._buffer_size:
             self.clear()
 
         prefix = ''
@@ -55,41 +66,71 @@ class PyDMLogLabel(QListWidget, PyDMWidget):
         self.addItem(prefix + str(new_value))
 
     @pyqtProperty(int)
-    def maxCount(self):
+    def bufferSize(self):
         """
-        The maximum number of log entries to show. When maximum is exceeded
-        the widget is cleared.
+        The maximum number of entries to show.
+
+        When maximum is exceeded the widget is cleared.
 
         Returns
         -------
         int
         """
-        return int(self._max_count)
+        return int(self._buffer_size)
 
-    @maxCount.setter
-    def maxCount(self, value):
+    @bufferSize.setter
+    def bufferSize(self, value):
         """
-        The maximum number of log entries to show. When maximum is exceeded
-        the widget is cleared.
+        The maximum number of entries to show.
+
+        When maximum is exceeded the widget is cleared.
 
         Parameters
         ----------
         value : int
         """
-        self._max_count = int(value)
+        self._buffer_size = int(value)
 
     @pyqtProperty(bool)
     def prependDateTime(self):
+        """
+        Define if the date and time information will be prepended to the text.
+
+        Returns
+        -------
+        bool
+        """
         return self._prepend_date_time
 
     @prependDateTime.setter
     def prependDateTime(self, value):
+        """
+        Define if the date and time information will be prepended to the text.
+
+        Parameters
+        ----------
+        value : bool
+        """
         self._prepend_date_time = bool(value)
 
     @pyqtProperty(str)
     def dateTimeFmt(self):
+        """
+        Define the format of the datetime information to be prepended.
+
+        Returns
+        -------
+        str
+        """
         return self._date_time_fmt
 
     @dateTimeFmt.setter
     def dateTimeFmt(self, value):
+        """
+        Define the format of the datetime information to be prepended.
+
+        Parameters
+        ----------
+        value : str
+        """
         self._date_time_fmt = str(value)
