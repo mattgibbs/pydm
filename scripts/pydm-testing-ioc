@@ -42,7 +42,10 @@ pvdb = {
         'ImageWidth'       : { 'type' : 'int', 'value' : IMAGE_SIZE, 'asg' : 'default' },
         'String'           : { 'type' : 'string', 'value': "Test String", 'asg' : 'default'},
         'Float'            : { 'type' : 'float', 'value': 0.0, 'lolim': -1.2, 'lolo': -1.0, 'low': -0.8, 'high': 0.8, 'hihi': 1.0, 'hilim': 1.2, 'unit': 'mJ', 'prec': 3, 'asg' : 'default' },
-        'StatusBits'       : { 'type' : 'int', 'value': 0b101010, 'lolim': 0, 'hilim': 32, 'asg' : 'default' }
+        'StatusBits'       : { 'type' : 'int', 'value': 0b101010, 'lolim': 0, 'hilim': 32, 'asg' : 'default' },
+        'YSignal'          : { 'type' : 'float', 'count': MAX_POINTS, 'asg': 'default' },
+        'XSignal'          : { 'type' : 'float', 'count': MAX_POINTS, 'asg': 'default' },
+        'XSetpoint'        : { 'type' : 'float', 'value': 5500.0, 'asg': 'default' }
 }
 
 def double_gaussian_2d(x, y, x0, y0, xsig, ysig):
@@ -122,6 +125,14 @@ class myDriver(Driver):
             two_spot_image = numpy.abs(256.0*(two_spots)).flatten(order='C').astype(numpy.uint8, copy=False)
             self.setParam('TwoSpotImage', two_spot_image)
             
+            #data for ICALEPCS2017 demo
+            mean = 5500.0
+            std = 500.0
+            signal_mean = 2.0
+            x = numpy.random.normal(self.getParam('XSetpoint'), std, MAX_POINTS)
+            y = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, MAX_POINTS)
+            self.setParam('XSignal', x)
+            self.setParam('YSignal', y)
             # do updates so clients see the changes
             self.updatePVs()
 

@@ -30,7 +30,7 @@
      </property>
      <property name="curves">
       <stringlist>
-       <string>{&quot;y_channel&quot;: &quot;ca://MTEST:GDET&quot;, &quot;x_channel&quot;: &quot;ca://MTEST:VAR&quot;, &quot;name&quot;: &quot;&quot;, &quot;color&quot;: &quot;white&quot;, &quot;connect_points&quot;: false, &quot;symbol&quot;: &quot;d&quot;}</string>
+       <string>{&quot;y_channel&quot;: &quot;ca://MTEST:YSignal&quot;, &quot;x_channel&quot;: &quot;ca://MTEST:XSignal&quot;, &quot;name&quot;: &quot;&quot;, &quot;color&quot;: &quot;white&quot;, &quot;connect_points&quot;: false, &quot;symbol&quot;: &quot;d&quot;}</string>
       </stringlist>
      </property>
      <property name="autoRangeX">
