@@ -15,6 +15,7 @@ from .label import PyDMLabel
 from .log_label import PyDMLogLabel
 from .line_edit import PyDMLineEdit
 from .pushbutton import PyDMPushButton
+from .state_button import PyDMStateButton
 from .related_display_button import PyDMRelatedDisplayButton
 from .shell_command import PyDMShellCommand
 from .slider import PyDMSlider
@@ -59,13 +60,15 @@ PyDMIndicatorPlugin = qtplugin_factory(PyDMIndicator)
 
 # Label plugin
 PyDMLabelPlugin = qtplugin_factory(PyDMLabel)
-PyDMLabelPlugin = qtplugin_factory(PyDMLogLabel)
+PyDMLogLabelPlugin = qtplugin_factory(PyDMLogLabel)
+
 
 # Line Edit plugin
 PyDMLineEditPlugin = qtplugin_factory(PyDMLineEdit)
 
 # Push Button plugin
 PyDMPushButtonPlugin = qtplugin_factory(PyDMPushButton)
+PyDMStateButtonPlugin = qtplugin_factory(PyDMStateButton)
 
 
 # Related Display Button plugin
