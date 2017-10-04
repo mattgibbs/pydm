@@ -1418,7 +1418,7 @@ class PyDMStateButton(QAbstractButton, PyDMWritableWidget):
         """Initialize all internal states and properties."""
         QAbstractButton.__init__(self, parent)
         PyDMWritableWidget.__init__(self, init_channel=init_channel)
-        self.pvbit = -1
+        self._bit = -1
         self.value = 0
         self.clicked.connect(self.send_value)
         self.shape = 0
