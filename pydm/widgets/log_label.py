@@ -20,8 +20,8 @@ class PyDMLogLabel(QListWidget, PyDMWidget):
         QListWidget.__init__(self, parent)
         PyDMWidget.__init__(self, init_channel=init_channel)
         self._buffer_size = 1000
-        self._prepend_date_time
-        self._date_time_prefix = '%Y/%M/%d-%H:%M:%S'
+        self._prepend_date_time = True
+        self._date_time_fmt = '%Y/%M/%d-%H:%M:%S'
 
     def value_changed(self, new_value):
         """
