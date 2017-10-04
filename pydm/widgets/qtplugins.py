@@ -12,6 +12,7 @@ from .enum_combo_box import PyDMEnumComboBox
 from .image import PyDMImageView
 from .indicator import PyDMIndicator
 from .label import PyDMLabel
+from .log_label import PyDMLogLabel
 from .line_edit import PyDMLineEdit
 from .pushbutton import PyDMPushButton
 from .related_display_button import PyDMRelatedDisplayButton
@@ -58,6 +59,7 @@ PyDMIndicatorPlugin = qtplugin_factory(PyDMIndicator)
 
 # Label plugin
 PyDMLabelPlugin = qtplugin_factory(PyDMLabel)
+PyDMLabelPlugin = qtplugin_factory(PyDMLogLabel)
 
 # Line Edit plugin
 PyDMLineEditPlugin = qtplugin_factory(PyDMLineEdit)
