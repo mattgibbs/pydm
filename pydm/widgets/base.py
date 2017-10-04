@@ -130,7 +130,6 @@ class PyDMWidget(PyDMPrimitiveWidget):
         self._precision_from_pv = True
         self._prec = 0
         self._unit = ""
-        self._pv_index = -1
 
         self._upper_ctrl_limit = None
         self._lower_ctrl_limit = None
@@ -178,12 +177,8 @@ class PyDMWidget(PyDMPrimitiveWidget):
         new_val : str, int, float, bool or np.ndarray
             The new value from the channel. The type depends on the channel.
         """
-        if isinstance(new_val, np.ndarray) and \
-           0 <= self._pv_index < len(new_val):
-            self.value = new_val
-        else:
-            self.value = new_val
-        self.channeltype = type(new_val)
+        self.value = new_val
+        self.channeltype = type(self.value)
         self.update_format_string()
 
     def alarm_severity_changed(self, new_alarm_severity):
@@ -525,33 +520,6 @@ class PyDMWidget(PyDMPrimitiveWidget):
         if self._prec != int(new_prec) and new_prec >= 0:
             self._prec = int(new_prec)
             self.update_format_string()
-
-    @pyqtProperty(int)
-    def pvIndex(self):
-        """
-        Define which index of the array will be handled by the widget.
-
-        Returns
-        -------
-        idx : int
-            The current pvIndex value
-        """
-        return self._pv_index
-
-    @pvIndex.setter
-    def pvIndex(self, new_idx):
-        """
-        Define which index of the array will be handled by the widget.
-
-        This has no effect when the PV is not an array or when its value is
-        lower than 0 or greater than the size of the array.
-
-        Parameters
-        ----------
-        new_idx : int
-            The new pvIndex value to use
-        """
-        self._pv_index = int(new_idx)
 
     @pyqtProperty(bool)
     def showUnits(self):
