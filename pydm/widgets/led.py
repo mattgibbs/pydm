@@ -25,7 +25,6 @@ class PyDMLed(QLed, PyDMWidget):
 
         self.pvbit = bit
 
-        self._enum_strings = None
         self._enum_map = enum_map
         self._count = None
 
@@ -68,7 +67,7 @@ class PyDMLed(QLed, PyDMWidget):
         PyDMWidget.value_changed(self, new_val)
         if new_val is None:
             return
-        if self._enum_strings is None:  # PV of type integer or float
+        if self.enum_strings is None:  # PV of type integer or float
             value = int(new_val)
             if self._bit < 0:  # Led represents value of PV
                 self.setValue(1 if value else 0)
@@ -80,12 +79,15 @@ class PyDMLed(QLed, PyDMWidget):
             if self._enum_map is None:
                 self.setOnColour(new_val)
             else:
-                if self._enum_strings is not None and isinstance(new_val, int):
-                    enum_name = self._enum_strings[new_val]
+                if self.enum_strings is not None and isinstance(new_val, int):
+                    enum_name = self.enum_strings[new_val]
                     color = self._enum_map[enum_name]
                     self.setOnColour(color)
 
     def enum_strings_changed(self, new_enum_strings):
+        """
+        Issue value_changed to set the led colour according to the enum_strings.
+        """
         PyDMWidget.enum_strings_changed(self, new_enum_strings)
-        if self.m_value is not None:
-            self.receiveValue(self.m_value)
+        if self.value is not None:
+            self.value_changed(self.value)
