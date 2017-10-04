@@ -9,7 +9,7 @@ MAX_POINTS      = 1000
 FREQUENCY       = 1000
 AMPLITUDE       = 1.0
 NUM_DIVISIONS   = 10
-MIN_UPDATE_TIME = 0.01
+MIN_UPDATE_TIME = 0.1
 IMAGE_SIZE      = 512
 
 prefix = 'MTEST:'
@@ -18,7 +18,7 @@ pvdb = {
                                 'enums': ['STOP', 'RUN'], 'asg'  : 'default'},
         'ReadOnly'     : { 'type' : 'enum',
                                 'enums': ['FALSE', 'TRUE'], 'value': 0 },
-        'UpdateTime'       : { 'prec' : 3, 'unit' : 's', 'value' : 1, 'asg' : 'default'     },
+        'UpdateTime'       : { 'prec' : 3, 'unit' : 's', 'value' : 0.1, 'asg' : 'default'     },
         'TimePerDivision'  : { 'prec' : 5, 'unit' : 's', 'value' : 0.001, 'asg' : 'default' },
         'TriggerDelay'     : { 'prec' : 5, 'unit' : 's', 'value' : 0.0005, 'asg' : 'default'},
         'VoltsPerDivision' : { 'prec' : 3, 'unit' : 'V', 'value' : 0.2, 'asg' : 'default'   },
