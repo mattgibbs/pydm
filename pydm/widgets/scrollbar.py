@@ -1,4 +1,3 @@
-"""Define PyDM scrollbar widget."""
 from pydm.PyQt.QtCore import Qt, pyqtSignal
 from pydm.widgets.QDoubleScrollBar import QDoubleScrollBar
 from .base import PyDMWritableWidget
