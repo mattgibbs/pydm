@@ -30,30 +30,27 @@ class PyDMScrollBar(QDoubleScrollBar, PyDMWritableWidget):
         PyDMWritableWidget.__init__(self, init_channel)
 
         self.setFocusPolicy(Qt.StrongFocus)
-        # self.setEnabled(False)
-        # self.setDecimals(precision)
         self.setInvertedControls(False)
         self._prec = precision
         self.setSingleStep(1/10**self._prec)
         self.setPageStep(10/10**self._prec)
-        # else:
-        #     self.setSingleStep(step)
-        #     self.setPageStep(10 * step)
-
-        self._update_tooltip()
 
         self.setTracking(True)
         self.actionTriggered.connect(self.send_value)
 
     def send_value(self):
-        """Emit send_value_signal."""
+        """
+        Emit a :attr:`send_value_signal` to update channel value.
+        """
         value = self.sliderPosition
         if self._connected and self.channeltype is not None:
             self.send_value_signal[self.channeltype].emit(
                 self.channeltype(value))
 
     def ctrl_limit_changed(self, which, new_limit):
-        """Call super and set new limits."""
+        """
+        Set new upper/lower limits as maximum/minimum values for the scrollbar.
+        """
         PyDMWritableWidget.ctrl_limit_changed(self, which, new_limit)
 
         if which == "UPPER":
@@ -61,19 +58,11 @@ class PyDMScrollBar(QDoubleScrollBar, PyDMWritableWidget):
         else:
             self.setMinimum(self._lower_ctrl_limit)
 
-        self._update_tooltip()
-
     def precision_changed(self, new_precision):
-        """Call super and set new steps."""
+        """
+        Set the step size based on the new precision value received.
+        """
         PyDMWritableWidget.precision_changed(self, new_precision)
         self.setDecimals(round(self._prec))
         self.setSingleStep(1/10**self._prec)
         self.setPageStep(10/10**self._prec)
-        self._update_tooltip()
-
-    def _update_tooltip(self):
-        if self._lower_ctrl_limit is not None \
-                and self._upper_ctrl_limit is not None:
-            toltp = \
-                str(self._lower_ctrl_limit) + "," + str(self._upper_ctrl_limit)
-            self.setToolTip(toltp)
