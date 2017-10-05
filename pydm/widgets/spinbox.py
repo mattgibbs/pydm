@@ -24,6 +24,10 @@ class PyDMSpinbox(QDoubleSpinBox, PyDMWritableWidget):
         self.setDecimals(0)
         self.app = QApplication.instance()
 
+        self.valueChanged.connect(self.send_value)  # signal from spinbox
+        self.setKeyboardTracking(False)
+        self.setAccelerated(True)
+
     def event(self, event):
         """
         Method invoked when an event of any nature happens on the
@@ -38,38 +42,31 @@ class PyDMSpinbox(QDoubleSpinBox, PyDMWritableWidget):
         ----------
         event : QEvent
         """
-        if (event.type() == QEvent.KeyPress):
-            ctrl_hold = self.app.queryKeyboardModifiers() == Qt.ControlModifier
+        if event.type() == QEvent.KeyPress and \
+           self.app.queryKeyboardModifiers() == Qt.ControlModifier:
 
-            if ctrl_hold and (event.key() == Qt.Key_Left):
+            if event.key() == Qt.Key_Left:
                 self.step_exponent = self.step_exponent + 1
                 self.update_step_size()
                 return True
-
-            if ctrl_hold and (event.key() == Qt.Key_Right):
-                self.step_exponent = self.step_exponent - 1
-
-                if self.step_exponent < -self.decimals():
-                    self.step_exponent = -self.decimals()
-
+            elif event.key() == Qt.Key_Right:
+                self.step_exponent = max(self.step_exponent - 1,
+                                         -self.decimals())
                 self.update_step_size()
                 return True
 
-            if (event.key() == Qt.Key_Up):
-                self.setValue(self.value + self.singleStep())
-                self.send_value()
-                return True
-
-            if (event.key() == Qt.Key_Down):
-                self.setValue(self.value - self.singleStep())
-                self.send_value()
-                return True
-
-            if (event.key() == Qt.Key_Return):
-                self.send_value()
-                return True
-
         return super(PyDMSpinbox, self).event(event)
+
+    def contextMenuEvent(self, ev):
+        """Increment LineEdit menu to toggle the display of the step size."""
+        def toogle():
+            self.showStepExponent = not self.showStepExponent
+
+        menu = self.lineEdit().createStandardContextMenu()
+        menu.addSeparator()
+        ac = menu.addAction('Toggle Show Step Size')
+        ac.triggered.connect(toogle)
+        menu.exec_(ev.globalPos())
 
     def update_step_size(self):
         """
@@ -114,12 +111,11 @@ class PyDMSpinbox(QDoubleSpinBox, PyDMWritableWidget):
         self.setValue(new_val)
         self.valueBeingSet = False
 
-    def send_value(self):
+    def send_value(self, value):
         """
         Method invoked to send the current value on the QDoubleSpinBox to
         the channel using the `send_value_signal`.
         """
-        value = float(self.cleanText())
         if not self.valueBeingSet:
             self.send_value_signal[float].emit(value)
 
