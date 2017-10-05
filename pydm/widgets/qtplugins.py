@@ -13,6 +13,8 @@ from .image import PyDMImageView
 from .indicator import PyDMIndicator
 from .label import PyDMLabel
 from .log_label import PyDMLogLabel
+from .led import PyDMLed
+from .QLed import QLed
 from .line_edit import PyDMLineEdit
 from .pushbutton import PyDMPushButton
 from .state_button import PyDMStateButton
@@ -61,6 +63,11 @@ PyDMIndicatorPlugin = qtplugin_factory(PyDMIndicator)
 # Label plugin
 PyDMLabelPlugin = qtplugin_factory(PyDMLabel)
 PyDMLogLabelPlugin = qtplugin_factory(PyDMLogLabel)
+
+
+# Led plugin
+QLedPlugin = qtplugin_factory(QLed)
+PyDMLedPlugin = qtplugin_factory(PyDMLed)
 
 
 # Line Edit plugin
