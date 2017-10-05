@@ -93,21 +93,21 @@ class PyDMWidget(PyDMPrimitiveWidget):
         },
         ALARM_CONTENT: {
             ALARM_NONE: {"color": "black"},
-            ALARM_MINOR: {"color": "yellow"},
+            ALARM_MINOR: {"color": "orange"},
             ALARM_MAJOR: {"color": "red"},
             ALARM_INVALID: {"color": "purple"},
             ALARM_DISCONNECTED: {"color": "white"}
         },
         ALARM_BORDER: {
-            ALARM_NONE: {"border": "0px"},
-            ALARM_MINOR: {"border": "2px solid yellow"},
+            ALARM_NONE: {"border": "2px solid transparent"},
+            ALARM_MINOR: {"border": "2px solid orange"},
             ALARM_MAJOR: {"border": "2px solid red"},
             ALARM_INVALID: {"border": "2px solid purple"},
             ALARM_DISCONNECTED: {"border": "2px solid white"}
         },
         ALARM_CONTENT | ALARM_BORDER: {
-            ALARM_NONE: {"color": "black", "border": "0px"},
-            ALARM_MINOR: {"color": "yellow", "border": "2px solid yellow"},
+            ALARM_NONE: {"color": "transparent", "border": "2px"},
+            ALARM_MINOR: {"color": "yellow", "border": "2px solid orange"},
             ALARM_MAJOR: {"color": "red", "border": "2px solid red"},
             ALARM_INVALID: {"color": "purple", "border": "2px solid purple"},
             ALARM_DISCONNECTED: {"color": "white", "border": "2px solid white"}
