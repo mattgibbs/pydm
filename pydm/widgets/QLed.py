@@ -1,30 +1,34 @@
+"""QLed module.
+
+Based on Robert Kent's LED Widget for the PyQt Framework, available on
+https://pypi.python.org/pypi/QLed or https://github.com/jazzycamel/QLed.
+"""
+
+
 from colorsys import rgb_to_hls, hls_to_rgb
-from pydm.PyQt.QtGui import QApplication, QWidget, QPainter, QGridLayout, QSizePolicy, QStyleOption
-from pydm.PyQt.QtCore import pyqtSignal, Qt, QSize, QTimer, QByteArray, QRectF, pyqtProperty, Q_ENUMS
+from pydm.PyQt.QtGui import (QApplication, QWidget, QPainter, QGridLayout,
+                             QStyleOption, QColor, QFrame, QHBoxLayout)
+from pydm.PyQt.QtCore import (pyqtSignal, Qt, QSize, QTimer, QByteArray,
+                              QRectF, pyqtProperty, Q_ENUMS)
 from pydm.PyQt.QtSvg import QSvgRenderer
 
-class QLed(QWidget):
+SHAPE = {'Circle': 1, 'Round': 2, 'Square': 3, 'Triangle': 4}
+
+
+class QLed(QFrame):
+    """QLed class."""
+
+    locals().update(**SHAPE)
+
     class shapeMap:
-        Circle   = 1
-        Round    = 2
-        Square   = 3
-        Triangle = 4
+        """Shape enum mapping class."""
+
+        locals().update(**SHAPE)
 
     Q_ENUMS(shapeMap)
 
-    class colorMap:
-        Grey   = -1
-        Red    = 0
-        Green  = 1
-        Yellow = 2
-        Orange = 3
-        Purple = 4
-        Blue   = 5
-
-    Q_ENUMS(colorMap)
-
-    shapes={
-        shapeMap.Circle:"""
+    shapesdict = {
+        Circle: """
             <svg height="50.000000px" id="svg9493" width="50.000000px" xmlns="http://www.w3.org/2000/svg">
               <defs id="defs9495">
                 <linearGradient gradientUnits="userSpaceOnUse" id="linearGradient6650" x1="23.402565" x2="23.389874" xlink:href="#linearGradient6506" y1="44.066776" y2="42.883698"/>
@@ -71,7 +75,7 @@ class QLed(QWidget):
             </svg>
         """,
 
-        shapeMap.Round:"""
+        Round: """
             <svg height="50.000000px" id="svg9493" width="100.00000px" xmlns="http://www.w3.org/2000/svg">
               <defs id="defs9495">
                 <linearGradient gradientTransform="matrix(0.928127,0.000000,0.000000,0.639013,13.55634,12.87587)" gradientUnits="userSpaceOnUse" id="linearGradient13424" x1="21.593750" x2="21.593750" xlink:href="#linearGradient6506" y1="47.917328" y2="46.774261"/>
@@ -134,7 +138,7 @@ class QLed(QWidget):
             </svg>
         """,
 
-        shapeMap.Square:"""
+        Square: """
             <svg height="50.000000px" id="svg9493" width="50.000000px" xmlns="http://www.w3.org/2000/svg">
               <defs id="defs9495">
                 <linearGradient gradientTransform="matrix(0.388435,0.000000,0.000000,0.618097,2.806900,2.626330)" gradientUnits="userSpaceOnUse" id="linearGradient31681" x1="21.593750" x2="21.593750" xlink:href="#linearGradient6506" y1="47.917328" y2="46.774261"/>
@@ -197,7 +201,7 @@ class QLed(QWidget):
             </svg>
         """,
 
-        shapeMap.Triangle:"""
+        Triangle: """
             <svg height="50.000000px" id="svg9493" width="50.000000px" xmlns="http://www.w3.org/2000/svg" >
               <defs id="defs9495">
                 <linearGradient gradientTransform="matrix(0.389994,0.000000,0.000000,0.403942,4.557010,29.83582)" gradientUnits="userSpaceOnUse" id="linearGradient28861" x1="23.187498" x2="23.187498" xlink:href="#linearGradient6506" y1="28.449617" y2="26.670279"/>
@@ -261,68 +265,84 @@ class QLed(QWidget):
         """
     }
 
-    colours={colorMap.Grey   : (0x5a, 0x5a, 0x5a),
-             colorMap.Red    : (0xCF, 0x00, 0x00),
-             colorMap.Green  : (0x0f, 0x69, 0x00),
-             colorMap.Yellow : (0xd2, 0xcd, 0x00),
-             colorMap.Orange : (0xda, 0x46, 0x15),
-             colorMap.Purple : (0x87, 0x00, 0x83),
-             colorMap.Blue   : (0x00, 0x03, 0x9a)}
+    Green = QColor(15, 105, 0)
+    Red = QColor(207, 0, 0)
+    Gray = QColor(90, 90, 90)
 
-    clicked=pyqtSignal()
+    clicked = pyqtSignal()
 
     def __init__(self, parent=None, **kwargs):
-        self.m_value=False
-        self.m_onColour=QLed.colorMap.Green
-        self.m_offColour=QLed.colorMap.Red
-        self.m_shape=QLed.shapeMap.Circle
+        """Class constructor."""
+        QFrame.__init__(self, parent, **kwargs)
+        self.horizontal_layout = QHBoxLayout(self)
+        self.led = QWidget(self)
+        self.horizontal_layout.addWidget(self.led)
+        self.m_state = False
+        self.m_onColor = QLed.Green
+        self.m_offColor = QLed.Red
+        self.m_dsblColor = QLed.Gray
+        self.m_shape = QLed.shapeMap.Circle
 
-        QWidget.__init__(self, parent, **kwargs)
+        self._pressed = False
+        self.led.renderer = QSvgRenderer()
 
-        self._pressed=False
-        self.renderer=QSvgRenderer()
+    def getState(self):
+        """Value property getter."""
+        return self.m_state
 
-        #ColorMap Enums
-        QLed.Grey   = -1
-        QLed.Red    = 0
-        QLed.Green  = 1
-        QLed.Yellow = 2
-        QLed.Orange = 3
-        QLed.Purple = 4
-        QLed.Blue   = 5
-
-        #Shapes Enums
-        QLed.Circle   = 1
-        QLed.Round    = 2
-        QLed.Square   = 3
-        QLed.Triangle = 4
-
-
-    def getValue(self): return self.m_value
-    def setValue(self, value):
-        self.m_value=value
+    def setState(self, value):
+        """Value property setter."""
+        self.m_state = value
         self.update()
-    value=pyqtProperty(bool, getValue, setValue)
 
-    def getOnColour(self): return self.m_onColour
-    def setOnColour(self, newColour):
-        self.m_onColour=newColour
+    state = pyqtProperty(bool, getState, setState)
+
+    def getOnColor(self):
+        """On color property getter."""
+        return self.m_onColor
+
+    def setOnColor(self, newColor):
+        """On color property setter."""
+        self.m_onColor = newColor
         self.update()
-    onColour=pyqtProperty(colorMap, getOnColour, setOnColour)
 
-    def getOffColour(self): return self.m_offColour
-    def setOffColour(self, newColour):
-        self.m_offColour=newColour
+    onColor = pyqtProperty(QColor, getOnColor, setOnColor)
+
+    def getOffColor(self):
+        """Off color property getter."""
+        return self.m_offColor
+
+    def setOffColor(self, newColor):
+        """Off color property setter."""
+        self.m_offColor = newColor
         self.update()
-    offColour=pyqtProperty(colorMap, getOffColour, setOffColour)
 
-    def getShape(self): return self.m_shape
+    offColor = pyqtProperty(QColor, getOffColor, setOffColor)
+
+    def getDsblColor(self):
+        """Disabled color property getter."""
+        return self.m_dsblColor
+
+    def setDsblColor(self, newColor):
+        """Disabled color property setter."""
+        self.m_dsblColor = newColor
+        self.update()
+
+    dsblColor = pyqtProperty(QColor, getDsblColor, setDsblColor)
+
+    def getShape(self):
+        """Shape property getter."""
+        return self.m_shape
+
     def setShape(self, newShape):
-        self.m_shape=newShape
+        """Shape property setter."""
+        self.m_shape = newShape
         self.update()
-    shape=pyqtProperty(shapeMap, getShape, setShape)
+
+    shape = pyqtProperty(shapeMap, getShape, setShape)
 
     def sizeHint(self):
+        """Return the base size of the widget according to shape."""
         if self.m_shape == QLed.shapeMap.Triangle:
             return QSize(48, 36)
         elif self.m_shape == QLed.shapeMap.Round:
@@ -330,93 +350,129 @@ class QLed(QWidget):
         return QSize(36, 36)
 
     def adjust(self, r, g, b):
-        def normalise(x): return x/255.0
-        def denormalise(x): return int(x*255.0)
+        """Adjust the color to set on svg code."""
+        def normalise(x):
+            return x/255.0
 
-        (h,l,s)=rgb_to_hls(normalise(r),normalise(g),normalise(b))
-        (nr,ng,nb)=hls_to_rgb(h,l*1.5,s)
+        def denormalise(x):
+            if x <= 1:
+                return int(x*255.0)
+            else:
+                return 255.0
 
-        return (denormalise(nr),denormalise(ng),denormalise(nb))
+        (h, l, s) = rgb_to_hls(normalise(r), normalise(g), normalise(b))
+        (nr, ng, nb) = hls_to_rgb(h, l*1.5, s)
+
+        return (denormalise(nr), denormalise(ng), denormalise(nb))
+
+    def getRGBfromQColor(self, qcolor):
+        """Convert QColors to a tupple of rgb colors to set on svg code."""
+        redhex = qcolor.red()
+        greenhex = qcolor.green()
+        bluehex = qcolor.blue()
+        return (redhex, greenhex, bluehex)
 
     def paintEvent(self, event):
-        option=QStyleOption()
+        """Handle appearence of the widget on state updates."""
+        option = QStyleOption()
         option.initFrom(self)
 
-        h=option.rect.height()
-        w=option.rect.width()
+        h = option.rect.height()
+        w = option.rect.width()
         if self.m_shape in (QLed.shapeMap.Triangle, QLed.shapeMap.Round):
-            aspect=(4/3.0) if self.m_shape==QLed.shapeMap.Triangle else 2.0
-            ah=w/aspect
-            aw=w
-            if ah>h:
-                ah=h
-                aw=h*aspect
-            x=abs(aw-w)/2.0
-            y=abs(ah-h)/2.0
-            bounds=QRectF(x,y,aw,ah)
+            aspect = (4/3.0) if self.m_shape == QLed.shapeMap.Triangle else 2.0
+            ah = w/aspect
+            aw = w
+            if ah > h:
+                ah = h
+                aw = h*aspect
+            x = abs(aw-w)/2.0
+            y = abs(ah-h)/2.0
+            bounds = QRectF(x, y, aw, ah)
         else:
-            size=min(w,h)
-            x=abs(size-w)/2.0
-            y=abs(size-h)/2.0
-            bounds=QRectF(x,y,size,size)
+            size = min(w, h)
+            x = abs(size-w)/2.0
+            y = abs(size-h)/2.0
+            bounds = QRectF(x, y, size, size)
 
-        painter=QPainter(self);
-        painter.setRenderHint(QPainter.Antialiasing, True);
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing, True)
 
         if self.isEnabled():
-            (dark_r,dark_g,dark_b)=self.colours[self.m_onColour if self.m_value else self.m_offColour]
+            (dark_r, dark_g, dark_b) = (self.getRGBfromQColor(self.m_onColor)
+                                        if self.m_state else
+                                        self.getRGBfromQColor(self.m_offColor))
         else:
-            (dark_r,dark_g,dark_b)=self.colours[-1]
+            (dark_r, dark_g, dark_b) = self.getRGBfromQColor(self.m_dsblColor)
 
-        dark_str="rgb(%d,%d,%d)" % (dark_r,dark_g,dark_b)
-        light_str="rgb(%d,%d,%d)" % self.adjust(dark_r,dark_g,dark_b)
+        dark_str = "rgb(%d,%d,%d)" % (dark_r, dark_g, dark_b)
+        light_str = "rgb(%d,%d,%d)" % self.adjust(dark_r, dark_g, dark_b)
 
-        shape_bytes = bytes(self.shapes[self.m_shape] % (dark_str,light_str), 'utf-8')
-        self.renderer.load(QByteArray(shape_bytes))
-        self.renderer.render(painter, bounds)
+        shape_bytes = bytes(
+            self.shapesdict[self.m_shape] % (dark_str, light_str), 'utf-8')
+        self.led.renderer.load(QByteArray(shape_bytes))
+        self.led.renderer.render(painter, bounds)
 
     def mousePressEvent(self, event):
-        self._pressed=True
+        """Handle mouse press event."""
+        self._pressed = True
         QWidget.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, event):
+        """Handle mouse release event."""
         if self._pressed:
-            self._pressed=False
+            self._pressed = False
             self.clicked.emit()
         QWidget.mouseReleaseEvent(self, event)
 
     def toggleValue(self):
-	    self.m_value=not self.m_value;
-	    self.update()
+        """Toggle value property."""
+        self.m_state = not self.m_state
+        self.update()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     from sys import argv, exit
 
     class Test(QWidget):
+        """Test class."""
+
         def __init__(self, parent=None):
+            """Test class constructor."""
             QWidget.__init__(self, parent)
 
             self.setWindowTitle("QLed Test")
 
-            _l=QGridLayout()
+            _l = QGridLayout()
             self.setLayout(_l)
 
-            self.leds=[]
-            for row, shape in enumerate(QLed.shapes.keys()):
-                for col, colour in enumerate(QLed.colours.keys()):
-                    if colour==QLed.colorMap.Grey: continue
-                    led=QLed(self, onColour=colour, shape=shape)
+            colorsdict = {'Red': QColor(207, 0, 0),
+                          'Green': QColor(15, 105, 0),
+                          'Yellow': QColor(210, 205, 0),
+                          'Orange': QColor(218, 70, 21),
+                          'Purple': QColor(135, 0, 131),
+                          'Blue': QColor(0, 3, 154)}
+
+            self.leds = []
+            for row, shape in enumerate(QLed.shapesdict.keys()):
+                for col, color in enumerate(colorsdict.keys()):
+                    led = QLed(self)
+                    led.setOnColor(colorsdict[color])
+                    led.setOffColor(QColor(90, 90, 90))
+                    led.setShape(shape)
                     _l.addWidget(led, row, col, Qt.AlignCenter)
                     self.leds.append(led)
 
             self.toggleLeds()
 
         def toggleLeds(self):
-            for led in self.leds: led.toggleValue()
+            """Toggle leds state."""
+            for led in self.leds:
+                led.toggleValue()
             QTimer.singleShot(1000, self.toggleLeds)
 
-    a=QApplication(argv)
-    t=Test()
+    a = QApplication(argv)
+    t = Test()
     t.show()
     t.raise_()
     exit(a.exec_())
