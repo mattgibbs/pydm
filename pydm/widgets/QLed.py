@@ -7,17 +7,15 @@ https://pypi.python.org/pypi/QLed or https://github.com/jazzycamel/QLed.
 
 from colorsys import rgb_to_hls, hls_to_rgb
 from pydm.PyQt.QtGui import (QApplication, QWidget, QPainter, QGridLayout,
-                             QStyleOption)
+                             QStyleOption, QColor, QFrame, QHBoxLayout)
 from pydm.PyQt.QtCore import (pyqtSignal, Qt, QSize, QTimer, QByteArray,
                               QRectF, pyqtProperty, Q_ENUMS)
 from pydm.PyQt.QtSvg import QSvgRenderer
 
 SHAPE = {'Circle': 1, 'Round': 2, 'Square': 3, 'Triangle': 4}
-COLORS = {'Grey': -1, 'Red': 0, 'Green': 1, 'Yellow': 2, 'Orange': 3,
-          'Purple': 4, 'Blue': 5}
 
 
-class QLed(QWidget):
+class QLed(QFrame):
     """QLed class."""
 
     locals().update(**SHAPE)
@@ -28,15 +26,6 @@ class QLed(QWidget):
         locals().update(**SHAPE)
 
     Q_ENUMS(shapeMap)
-
-    locals().update(**COLORS)
-
-    class colorMap:
-        """Color enum mapping class."""
-
-        locals().update(**COLORS)
-
-    Q_ENUMS(colorMap)
 
     shapesdict = {
         Circle: """
@@ -276,27 +265,26 @@ class QLed(QWidget):
         """
     }
 
-    colorsdict = {Grey: (0x5a, 0x5a, 0x5a),
-                  Red: (0xCF, 0x00, 0x00),
-                  Green: (0x0f, 0x69, 0x00),
-                  Yellow: (0xd2, 0xcd, 0x00),
-                  Orange: (0xda, 0x46, 0x15),
-                  Purple: (0x87, 0x00, 0x83),
-                  Blue: (0x00, 0x03, 0x9a)}
+    Green = QColor(15, 105, 0)
+    Red = QColor(207, 0, 0)
+    Gray = QColor(90, 90, 90)
 
     clicked = pyqtSignal()
 
     def __init__(self, parent=None, **kwargs):
         """Class constructor."""
+        QFrame.__init__(self, parent, **kwargs)
+        self.horizontal_layout = QHBoxLayout(self)
+        self.led = QWidget(self)
+        self.horizontal_layout.addWidget(self.led)
         self.m_state = False
-        self.m_onColor = QLed.colorMap.Green
-        self.m_offColor = QLed.colorMap.Red
+        self.m_onColor = QLed.Green
+        self.m_offColor = QLed.Red
+        self.m_dsblColor = QLed.Gray
         self.m_shape = QLed.shapeMap.Circle
 
-        QWidget.__init__(self, parent, **kwargs)
-
         self._pressed = False
-        self.renderer = QSvgRenderer()
+        self.led.renderer = QSvgRenderer()
 
     def getState(self):
         """Value property getter."""
@@ -318,7 +306,7 @@ class QLed(QWidget):
         self.m_onColor = newColor
         self.update()
 
-    onColor = pyqtProperty(colorMap, getOnColor, setOnColor)
+    onColor = pyqtProperty(QColor, getOnColor, setOnColor)
 
     def getOffColor(self):
         """Off color property getter."""
@@ -329,7 +317,18 @@ class QLed(QWidget):
         self.m_offColor = newColor
         self.update()
 
-    offColor = pyqtProperty(colorMap, getOffColor, setOffColor)
+    offColor = pyqtProperty(QColor, getOffColor, setOffColor)
+
+    def getDsblColor(self):
+        """Disabled color property getter."""
+        return self.m_dsblColor
+
+    def setDsblColor(self, newColor):
+        """Disabled color property setter."""
+        self.m_dsblColor = newColor
+        self.update()
+
+    dsblColor = pyqtProperty(QColor, getDsblColor, setDsblColor)
 
     def getShape(self):
         """Shape property getter."""
@@ -356,12 +355,22 @@ class QLed(QWidget):
             return x/255.0
 
         def denormalise(x):
-            return int(x*255.0)
+            if x <= 1:
+                return int(x*255.0)
+            else:
+                return 255.0
 
         (h, l, s) = rgb_to_hls(normalise(r), normalise(g), normalise(b))
         (nr, ng, nb) = hls_to_rgb(h, l*1.5, s)
 
         return (denormalise(nr), denormalise(ng), denormalise(nb))
+
+    def getRGBfromQColor(self, qcolor):
+        """Convert QColors to a tupple of rgb colors to set on svg code."""
+        redhex = qcolor.red()
+        greenhex = qcolor.green()
+        bluehex = qcolor.blue()
+        return (redhex, greenhex, bluehex)
 
     def paintEvent(self, event):
         """Handle appearence of the widget on state updates."""
@@ -390,18 +399,19 @@ class QLed(QWidget):
         painter.setRenderHint(QPainter.Antialiasing, True)
 
         if self.isEnabled():
-            (dark_r, dark_g, dark_b) = self.colorsdict[
-                self.m_onColor if self.m_state else self.m_offColor]
+            (dark_r, dark_g, dark_b) = (self.getRGBfromQColor(self.m_onColor)
+                                        if self.m_state else
+                                        self.getRGBfromQColor(self.m_offColor))
         else:
-            (dark_r, dark_g, dark_b) = self.colorsdict[-1]
+            (dark_r, dark_g, dark_b) = self.getRGBfromQColor(self.m_dsblColor)
 
         dark_str = "rgb(%d,%d,%d)" % (dark_r, dark_g, dark_b)
         light_str = "rgb(%d,%d,%d)" % self.adjust(dark_r, dark_g, dark_b)
 
         shape_bytes = bytes(
             self.shapesdict[self.m_shape] % (dark_str, light_str), 'utf-8')
-        self.renderer.load(QByteArray(shape_bytes))
-        self.renderer.render(painter, bounds)
+        self.led.renderer.load(QByteArray(shape_bytes))
+        self.led.renderer.render(painter, bounds)
 
     def mousePressEvent(self, event):
         """Handle mouse press event."""
@@ -436,12 +446,20 @@ if __name__ == "__main__":
             _l = QGridLayout()
             self.setLayout(_l)
 
+            colorsdict = {'Red': QColor(207, 0, 0),
+                          'Green': QColor(15, 105, 0),
+                          'Yellow': QColor(210, 205, 0),
+                          'Orange': QColor(218, 70, 21),
+                          'Purple': QColor(135, 0, 131),
+                          'Blue': QColor(0, 3, 154)}
+
             self.leds = []
             for row, shape in enumerate(QLed.shapesdict.keys()):
-                for col, color in enumerate(QLed.colorsdict.keys()):
-                    if color == QLed.colorMap.Grey:
-                        continue
-                    led = QLed(self, onColor=color, shape=shape)
+                for col, color in enumerate(colorsdict.keys()):
+                    led = QLed(self)
+                    led.setOnColor(colorsdict[color])
+                    led.setOffColor(QColor(90, 90, 90))
+                    led.setShape(shape)
                     _l.addWidget(led, row, col, Qt.AlignCenter)
                     self.leds.append(led)
 
