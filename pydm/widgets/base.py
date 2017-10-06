@@ -99,14 +99,14 @@ class PyDMWidget(PyDMPrimitiveWidget):
             ALARM_DISCONNECTED: {"color": "white"}
         },
         ALARM_BORDER: {
-            ALARM_NONE: {"border": "0px"},
+            ALARM_NONE: {"border": "2px solid transparent"},
             ALARM_MINOR: {"border": "2px solid yellow"},
             ALARM_MAJOR: {"border": "2px solid red"},
             ALARM_INVALID: {"border": "2px solid purple"},
             ALARM_DISCONNECTED: {"border": "2px solid white"}
         },
         ALARM_CONTENT | ALARM_BORDER: {
-            ALARM_NONE: {"color": "black", "border": "0px"},
+            ALARM_NONE: {"color": "black", "border": "2px solid transparent"},
             ALARM_MINOR: {"color": "yellow", "border": "2px solid yellow"},
             ALARM_MAJOR: {"color": "red", "border": "2px solid red"},
             ALARM_INVALID: {"color": "purple", "border": "2px solid purple"},
@@ -139,6 +139,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
 
         self.value = None
         self.channeltype = None
+        self.subtype = None
         self.check_enable_state()
         # If this label is inside a PyDMApplication (not Designer) start it in the disconnected state.
         app = QApplication.instance()
@@ -179,6 +180,8 @@ class PyDMWidget(PyDMPrimitiveWidget):
         """
         self.value = new_val
         self.channeltype = type(self.value)
+        if self.channeltype == np.ndarray:
+            self.subtype = type(self.value[0])
         self.update_format_string()
 
     def alarm_severity_changed(self, new_alarm_severity):
