@@ -57,6 +57,13 @@ def gaussian_2d(x, y, x0, y0, xsig, ysig):
 class myDriver(Driver):
     def __init__(self):
         Driver.__init__(self)
+        mean = 5500.0
+        std = 500.0
+        signal_mean = 2.0
+        x = numpy.random.normal(self.getParam('XSetpoint'), std, MAX_POINTS)
+        y = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, MAX_POINTS)
+        self.setParam('XSignal', x)
+        self.setParam('YSignal', y)
         self.eid = threading.Event()
         self.tid = threading.Thread(target = self.runSimScope) 
         self.tid.setDaemon(True)
@@ -129,10 +136,16 @@ class myDriver(Driver):
             mean = 5500.0
             std = 500.0
             signal_mean = 2.0
-            x = numpy.random.normal(self.getParam('XSetpoint'), std, MAX_POINTS)
-            y = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, MAX_POINTS)
-            self.setParam('XSignal', x)
-            self.setParam('YSignal', y)
+            x = numpy.random.normal(self.getParam('XSetpoint'), std, 1)
+            y = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, 1)
+            old_xsignal = self.getParam('XSignal')
+            old_ysignal = self.getParam('YSignal')
+            new_xsignal = numpy.roll(old_xsignal, -1)
+            new_ysignal = numpy.roll(old_ysignal, -1)
+            new_xsignal[-1] = x
+            new_ysignal[-1] = y
+            self.setParam('XSignal', new_xsignal)
+            self.setParam('YSignal', new_ysignal)
             # do updates so clients see the changes
             self.updatePVs()
 
