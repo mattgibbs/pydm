@@ -9,7 +9,7 @@ MAX_POINTS      = 1000
 FREQUENCY       = 1000
 AMPLITUDE       = 1.0
 NUM_DIVISIONS   = 10
-MIN_UPDATE_TIME = 0.1
+MIN_UPDATE_TIME = 0.03
 IMAGE_SIZE      = 512
 
 prefix = 'MTEST:'
@@ -18,7 +18,7 @@ pvdb = {
                                 'enums': ['STOP', 'RUN'], 'asg'  : 'default'},
         'ReadOnly'     : { 'type' : 'enum',
                                 'enums': ['FALSE', 'TRUE'], 'value': 0 },
-        'UpdateTime'       : { 'prec' : 3, 'unit' : 's', 'value' : 0.1, 'asg' : 'default'     },
+        'UpdateTime'       : { 'prec' : 3, 'unit' : 's', 'value' : 0.03, 'asg' : 'default'     },
         'TimePerDivision'  : { 'prec' : 5, 'unit' : 's', 'value' : 0.001, 'asg' : 'default' },
         'TriggerDelay'     : { 'prec' : 5, 'unit' : 's', 'value' : 0.0005, 'asg' : 'default'},
         'VoltsPerDivision' : { 'prec' : 3, 'unit' : 'V', 'value' : 0.2, 'asg' : 'default'   },
@@ -43,8 +43,8 @@ pvdb = {
         'String'           : { 'type' : 'string', 'value': "Test String", 'asg' : 'default'},
         'Float'            : { 'type' : 'float', 'value': 0.0, 'lolim': -1.2, 'lolo': -1.0, 'low': -0.8, 'high': 0.8, 'hihi': 1.0, 'hilim': 1.2, 'unit': 'mJ', 'prec': 3, 'asg' : 'default' },
         'StatusBits'       : { 'type' : 'int', 'value': 0b101010, 'lolim': 0, 'hilim': 32, 'asg' : 'default' },
-        'YSignal'          : { 'type' : 'float', 'count': MAX_POINTS, 'asg': 'default' },
-        'XSignal'          : { 'type' : 'float', 'count': MAX_POINTS, 'asg': 'default' },
+        'YSignal'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
+        'XSignal'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
         'XSetpoint'        : { 'type' : 'float', 'value': 5500.0, 'asg': 'default' }
 }
 
@@ -60,8 +60,8 @@ class myDriver(Driver):
         mean = 5500.0
         std = 500.0
         signal_mean = 2.0
-        x = numpy.random.normal(self.getParam('XSetpoint'), std, MAX_POINTS)
-        y = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, MAX_POINTS)
+        x = numpy.random.normal(self.getParam('XSetpoint'), std, 200)
+        y = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, 200)
         self.setParam('XSignal', x)
         self.setParam('YSignal', y)
         self.eid = threading.Event()
