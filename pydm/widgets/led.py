@@ -20,8 +20,8 @@ class PyDMLed(QLed, PyDMWidget):
         Mapping between enum_string and led colors.
     """
 
-    DarkGreen = QColor(20, 60, 10)
-    LightGreen = QColor(0, 170, 0)
+    DarkGreen = QColor(20, 80, 10)
+    LightGreen = QColor(0, 140, 0)
     Red = QColor(207, 0, 0)
     Gray = QColor(90, 90, 90)
 
@@ -90,7 +90,7 @@ class PyDMLed(QLed, PyDMWidget):
                                   PyDMLed.LightGreen,
                                   PyDMLed.Red,
                                   PyDMLed.Gray]
-                self.setOnColor(enum_colorlist(new_val))
+                self.setOnColor(enum_colorlist[new_val])
             else:
                 if self.enum_strings is not None and isinstance(new_val, int):
                     enum_name = self.enum_strings[new_val]
