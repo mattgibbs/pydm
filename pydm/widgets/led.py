@@ -80,7 +80,7 @@ class PyDMLed(QLed, PyDMWidget):
         else:  # PV of type ENUM
             self.setState(1)
             if self._enum_map is None:
-                self.setOnColor(new_val)
+                raise AttributeError("enum_map attribute cannot be None")
             else:
                 if self.enum_strings is not None and isinstance(new_val, int):
                     enum_name = self.enum_strings[new_val]
