@@ -22,8 +22,8 @@ class PyDMLed(QLed, PyDMWidget):
 
     DarkGreen = QColor(20, 80, 10)
     LightGreen = QColor(0, 140, 0)
+    Yellow = QColor(210, 205, 0)
     Red = QColor(207, 0, 0)
-    Gray = QColor(90, 90, 90)
 
     def __init__(self, parent=None, init_channel='', bit=-1, enum_map=None):
         QLed.__init__(self, parent)
@@ -88,8 +88,8 @@ class PyDMLed(QLed, PyDMWidget):
             if self._enum_map is None:
                 enum_colorlist = [PyDMLed.DarkGreen,
                                   PyDMLed.LightGreen,
-                                  PyDMLed.Red,
-                                  PyDMLed.Gray]
+                                  PyDMLed.Yellow,
+                                  PyDMLed.Red]
                 self.setOnColor(enum_colorlist[new_val])
             else:
                 if self.enum_strings is not None and isinstance(new_val, int):
