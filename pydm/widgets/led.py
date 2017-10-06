@@ -1,3 +1,4 @@
+from pydm.PyQt.QtGui import QColor
 from pydm.PyQt.QtCore import pyqtProperty
 from pydm.widgets.QLed import QLed
 from .base import PyDMWidget
@@ -18,6 +19,11 @@ class PyDMLed(QLed, PyDMWidget):
     enum_map : int
         Mapping between enum_string and led colors.
     """
+
+    DarkGreen = QColor(20, 60, 10)
+    LightGreen = QColor(0, 170, 0)
+    Red = QColor(207, 0, 0)
+    Gray = QColor(90, 90, 90)
 
     def __init__(self, parent=None, init_channel='', bit=-1, enum_map=None):
         QLed.__init__(self, parent)
@@ -80,7 +86,11 @@ class PyDMLed(QLed, PyDMWidget):
         else:  # PV of type ENUM
             self.setState(1)
             if self._enum_map is None:
-                raise AttributeError("enum_map attribute cannot be None")
+                enum_colorlist = [PyDMLed.DarkGreen,
+                                  PyDMLed.LightGreen,
+                                  PyDMLed.Red,
+                                  PyDMLed.Gray]
+                self.setOnColor(enum_colorlist(new_val))
             else:
                 if self.enum_strings is not None and isinstance(new_val, int):
                     enum_name = self.enum_strings[new_val]
