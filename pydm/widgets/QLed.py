@@ -277,9 +277,8 @@ class QLed(QFrame):
         self.horizontal_layout = QHBoxLayout(self)
         self.led = QWidget(self)
         self.horizontal_layout.addWidget(self.led)
-        self.m_state = False
-        self.m_onColor = QLed.Green
-        self.m_offColor = QLed.Red
+        self.m_state = 0
+        self.m_stateColors = [self.Red, self.Green]
         self.m_dsblColor = QLed.Gray
         self.m_shape = QLed.shapeMap.Circle
 
@@ -299,25 +298,38 @@ class QLed(QFrame):
 
     def getOnColor(self):
         """On color property getter."""
-        return self.m_onColor
+        return self.m_stateColors[1]
 
     def setOnColor(self, newColor):
         """On color property setter."""
-        self.m_onColor = newColor
+        self.m_stateColors[1] = newColor
         self.update()
 
     onColor = pyqtProperty(QColor, getOnColor, setOnColor)
 
     def getOffColor(self):
         """Off color property getter."""
-        return self.m_offColor
+        return self.m_stateColors[0]
 
     def setOffColor(self, newColor):
         """Off color property setter."""
-        self.m_offColor = newColor
+        self.m_stateColors = newColor[0]
         self.update()
 
     offColor = pyqtProperty(QColor, getOffColor, setOffColor)
+
+    @property
+    def stateColors(self):
+        """Color list property getter."""
+        return list(self.m_stateColors)
+
+    @stateColors.setter
+    def stateColors(self, new_colors):
+        """Color list property setter."""
+        if not isinstance(new_colors, (list, tuple)) and\
+                len(new_colors) < 2 and not isinstance(new_colors[0], QColor):
+            return
+        self.m_stateColors = list(new_colors)
 
     def getDsblColor(self):
         """Disabled color property getter."""
@@ -398,12 +410,10 @@ class QLed(QFrame):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing, True)
 
-        if self.isEnabled():
-            (dark_r, dark_g, dark_b) = (self.getRGBfromQColor(self.m_onColor)
-                                        if self.m_state else
-                                        self.getRGBfromQColor(self.m_offColor))
-        else:
-            (dark_r, dark_g, dark_b) = self.getRGBfromQColor(self.m_dsblColor)
+        ind = self.m_state % len(self.m_stateColors)
+        dark_r, dark_g, dark_b = self.getRGBfromQColor(self.m_stateColors[ind])
+        if not self.isEnabled():
+            dark_r, dark_g, dark_b = self.getRGBfromQColor(self.m_dsblColor)
 
         dark_str = "rgb(%d,%d,%d)" % (dark_r, dark_g, dark_b)
         light_str = "rgb(%d,%d,%d)" % self.adjust(dark_r, dark_g, dark_b)
@@ -427,7 +437,7 @@ class QLed(QFrame):
 
     def toggleValue(self):
         """Toggle value property."""
-        self.m_state = not self.m_state
+        self.m_state = 0 if self.m_state else 1
         self.update()
 
 
