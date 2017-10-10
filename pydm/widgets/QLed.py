@@ -313,7 +313,7 @@ class QLed(QFrame):
 
     def setOffColor(self, newColor):
         """Off color property setter."""
-        self.m_stateColors = newColor[0]
+        self.m_stateColors[0] = newColor
         self.update()
 
     offColor = pyqtProperty(QColor, getOffColor, setOffColor)
