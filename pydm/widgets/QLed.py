@@ -7,7 +7,7 @@ https://pypi.python.org/pypi/QLed or https://github.com/jazzycamel/QLed.
 
 from colorsys import rgb_to_hls, hls_to_rgb
 from pydm.PyQt.QtGui import (QApplication, QWidget, QPainter, QGridLayout,
-                             QStyleOption, QColor, QFrame, QHBoxLayout)
+                             QStyleOption, QColor, QFrame)
 from pydm.PyQt.QtCore import (pyqtSignal, Qt, QSize, QTimer, QByteArray,
                               QRectF, pyqtProperty, Q_ENUMS)
 from pydm.PyQt.QtSvg import QSvgRenderer
@@ -273,17 +273,14 @@ class QLed(QFrame):
 
     def __init__(self, parent=None, **kwargs):
         """Class constructor."""
-        QFrame.__init__(self, parent, **kwargs)
-        self.horizontal_layout = QHBoxLayout(self)
-        self.led = QWidget(self)
-        self.horizontal_layout.addWidget(self.led)
+        super().__init__(parent, **kwargs)
         self.m_state = 0
         self.m_stateColors = [self.Red, self.Green]
-        self.m_dsblColor = QLed.Gray
-        self.m_shape = QLed.shapeMap.Circle
+        self.m_dsblColor = self.Gray
+        self.m_shape = self.shapeMap.Circle
 
         self._pressed = False
-        self.led.renderer = QSvgRenderer()
+        self.renderer = QSvgRenderer()
 
     def getState(self):
         """Value property getter."""
@@ -355,9 +352,9 @@ class QLed(QFrame):
 
     def sizeHint(self):
         """Return the base size of the widget according to shape."""
-        if self.m_shape == QLed.shapeMap.Triangle:
+        if self.m_shape == self.shapeMap.Triangle:
             return QSize(48, 36)
-        elif self.m_shape == QLed.shapeMap.Round:
+        elif self.m_shape == self.shapeMap.Round:
             return QSize(72, 36)
         return QSize(36, 36)
 
@@ -391,8 +388,8 @@ class QLed(QFrame):
 
         h = option.rect.height()
         w = option.rect.width()
-        if self.m_shape in (QLed.shapeMap.Triangle, QLed.shapeMap.Round):
-            aspect = (4/3.0) if self.m_shape == QLed.shapeMap.Triangle else 2.0
+        if self.m_shape in (self.shapeMap.Triangle, self.shapeMap.Round):
+            aspect = (4/3.0) if self.m_shape == self.shapeMap.Triangle else 2.0
             ah = w/aspect
             aw = w
             if ah > h:
@@ -420,20 +417,20 @@ class QLed(QFrame):
 
         shape_bytes = bytes(
             self.shapesdict[self.m_shape] % (dark_str, light_str), 'utf-8')
-        self.led.renderer.load(QByteArray(shape_bytes))
-        self.led.renderer.render(painter, bounds)
+        self.renderer.load(QByteArray(shape_bytes))
+        self.renderer.render(painter, bounds)
 
     def mousePressEvent(self, event):
         """Handle mouse press event."""
         self._pressed = True
-        QWidget.mousePressEvent(self, event)
+        super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         """Handle mouse release event."""
         if self._pressed:
             self._pressed = False
             self.clicked.emit()
-        QWidget.mouseReleaseEvent(self, event)
+        super().mouseReleaseEvent(event)
 
     def toggleValue(self):
         """Toggle value property."""
