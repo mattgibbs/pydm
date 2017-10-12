@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>915</width>
-    <height>841</height>
+    <width>1043</width>
+    <height>840</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,6 +20,9 @@
       <layout class="QGridLayout" name="imageGridLayout">
        <item row="0" column="0">
         <widget class="PyDMImageView" name="imageView">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
            <horstretch>0</horstretch>
@@ -38,6 +41,12 @@
          <property name="whatsThis">
           <string>Displays an image from a PV.</string>
          </property>
+         <property name="alarmSensitiveBorder" stdset="0">
+          <bool>false</bool>
+         </property>
+         <property name="precisionFromPV" stdset="0">
+          <bool>false</bool>
+         </property>
         </widget>
        </item>
       </layout>
@@ -51,6 +60,12 @@
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>300</width>
+           <height>0</height>
+          </size>
          </property>
          <property name="title">
           <string>Camera</string>
@@ -82,7 +97,7 @@
           <item row="1" column="1">
            <widget class="QLabel" name="connectedLabel">
             <property name="text">
-             <string>Yes/No</string>
+             <string>No</string>
             </property>
            </widget>
           </item>
@@ -310,7 +325,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox_4">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+          <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -319,18 +334,15 @@
           <string>Marker</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="spacing">
+           <number>0</number>
+          </property>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_6">
             <item>
              <widget class="QPushButton" name="marker1Button">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
               <property name="text">
-               <string>1</string>
+               <string>1 </string>
               </property>
               <property name="checkable">
                <bool>true</bool>
@@ -340,7 +352,7 @@
             <item>
              <widget class="QLabel" name="label_11">
               <property name="text">
-               <string>X</string>
+               <string>X </string>
               </property>
              </widget>
             </item>
@@ -354,7 +366,7 @@
             <item>
              <widget class="QLabel" name="label_12">
               <property name="text">
-               <string>Y</string>
+               <string>Y </string>
               </property>
              </widget>
             </item>
@@ -382,7 +394,7 @@
             <item>
              <widget class="QLabel" name="label_13">
               <property name="text">
-               <string>X</string>
+               <string>X </string>
               </property>
              </widget>
             </item>
@@ -396,7 +408,7 @@
             <item>
              <widget class="QLabel" name="label_14">
               <property name="text">
-               <string>Y</string>
+               <string>Y </string>
               </property>
              </widget>
             </item>
@@ -424,7 +436,7 @@
             <item>
              <widget class="QLabel" name="label_15">
               <property name="text">
-               <string>X</string>
+               <string>X </string>
               </property>
              </widget>
             </item>
@@ -438,7 +450,7 @@
             <item>
              <widget class="QLabel" name="label_16">
               <property name="text">
-               <string>Y</string>
+               <string>Y </string>
               </property>
              </widget>
             </item>
@@ -466,7 +478,7 @@
             <item>
              <widget class="QLabel" name="label_17">
               <property name="text">
-               <string>X</string>
+               <string>X </string>
               </property>
              </widget>
             </item>
@@ -480,7 +492,7 @@
             <item>
              <widget class="QLabel" name="label_18">
               <property name="text">
-               <string>Y</string>
+               <string>Y </string>
               </property>
              </widget>
             </item>
@@ -497,7 +509,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="groupBox_5">
+        <widget class="QGroupBox" name="roiGroupBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
            <horstretch>0</horstretch>

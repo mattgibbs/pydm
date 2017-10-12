@@ -41,6 +41,7 @@ class CamViewer(Display):
         self.ui.colorMapComboBox.clear()
         for map_name in self.ui.imageView.color_maps:
             self.ui.colorMapComboBox.addItem(map_name)
+        self.ui.colorMapComboBox.setCurrentText("viridis")
         self.ui.imageView.setColorMapToPreset(self.ui.colorMapComboBox.currentText())
         self.ui.colorMapComboBox.activated[str].connect(self.colorMapChanged)
             
@@ -67,6 +68,7 @@ class CamViewer(Display):
         #self.yLineoutPlot.setYLink(self.ui.imageView.getView())
         self.ui.imageGridLayout.addWidget(self.yLineoutPlot, 0, 0)
         self.yLineoutPlot.hide()
+        self.yLineoutPlot.setMouseEnabled(False, False)
         #We do some mangling of the .ui file here and move the imageView over a cell, kind of ugly.
         self.ui.imageGridLayout.removeWidget(self.ui.imageView)
         self.ui.imageGridLayout.addWidget(self.ui.imageView, 0, 1)
@@ -79,29 +81,29 @@ class CamViewer(Display):
         #self.xLineoutPlot.setXLink(self.ui.imageView.getView())
         self.ui.imageGridLayout.addWidget(self.xLineoutPlot, 1, 1)
         self.xLineoutPlot.hide()
-
+        self.xLineoutPlot.setMouseEnabled(False, False)
         #Update the lineout plot ranges when the image gets panned or zoomed
         self.ui.imageView.getView().sigRangeChanged.connect(self.updateLineoutRange) 
 
         #Instantiate markers.
         self.marker_dict = {1:{}, 2:{}, 3:{}, 4:{}}
         marker_size = QPointF(20.,20.)
-        self.marker_dict[1]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((100,100,255), width=3))
+        self.marker_dict[1]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((100,100,255), width=5))
         self.marker_dict[1]['button'] = self.ui.marker1Button
         self.marker_dict[1]['xlineedit'] = self.ui.marker1XPosLineEdit
         self.marker_dict[1]['ylineedit'] = self.ui.marker1YPosLineEdit
         
-        self.marker_dict[2]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((255,100,100), width=3))
+        self.marker_dict[2]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((255,100,100), width=5))
         self.marker_dict[2]['button'] = self.ui.marker2Button
         self.marker_dict[2]['xlineedit'] = self.ui.marker2XPosLineEdit
         self.marker_dict[2]['ylineedit'] = self.ui.marker2YPosLineEdit
         
-        self.marker_dict[3]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((60,255,60), width=3))
+        self.marker_dict[3]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((60,255,60), width=5))
         self.marker_dict[3]['button'] = self.ui.marker3Button
         self.marker_dict[3]['xlineedit'] = self.ui.marker3XPosLineEdit
         self.marker_dict[3]['ylineedit'] = self.ui.marker3YPosLineEdit
         
-        self.marker_dict[4]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((255,60,255), width=3))
+        self.marker_dict[4]['marker'] = ImageMarker((0,0), size=marker_size, pen=mkPen((255,60,255), width=5))
         self.marker_dict[4]['button'] = self.ui.marker4Button
         self.marker_dict[4]['xlineedit'] = self.ui.marker4XPosLineEdit
         self.marker_dict[4]['ylineedit'] = self.ui.marker4YPosLineEdit
@@ -129,6 +131,7 @@ class CamViewer(Display):
         #Set up ROI buttons
         self.ui.setROIButton.clicked.connect(self.setROI)
         self.ui.resetROIButton.clicked.connect(self.resetROI)
+        self.ui.roiGroupBox.setHidden(True)
     
     @pyqtSlot()
     def zoomIn(self):
