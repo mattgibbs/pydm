@@ -22,9 +22,6 @@
      <property name="whatsThis">
       <string/>
      </property>
-     <property name="autoRangeX">
-      <bool>true</bool>
-     </property>
      <property name="showXGrid">
       <bool>true</bool>
      </property>
@@ -36,8 +33,11 @@
      </property>
      <property name="curves">
       <stringlist>
-       <string>{&quot;y_channel&quot;: &quot;ca://MTEST:Waveform&quot;, &quot;x_channel&quot;: &quot;ca://MTEST:TimeBase&quot;, &quot;name&quot;: &quot;Scope Trace&quot;, &quot;color&quot;: &quot;white&quot;}</string>
+       <string>{&quot;y_channel&quot;: &quot;ca://MTEST:Waveform&quot;, &quot;x_channel&quot;: &quot;ca://MTEST:TimeBase&quot;, &quot;name&quot;: &quot;Scope Trace&quot;, &quot;color&quot;: &quot;white&quot;, &quot;connect_points&quot;: true, &quot;symbol&quot;: null, &quot;redraw_mode&quot;: 2}</string>
       </stringlist>
+     </property>
+     <property name="autoRangeX">
+      <bool>true</bool>
      </property>
      <property name="yChannel" stdset="0">
       <string>ca://MTEST:Waveform</string>
@@ -72,7 +72,10 @@
           <property name="whatsThis">
            <string/>
           </property>
-          <property name="channel">
+          <property name="alarmSensitiveBorder" stdset="0">
+           <bool>false</bool>
+          </property>
+          <property name="channel" stdset="0">
            <string>ca://MTEST:Run</string>
           </property>
          </widget>
@@ -129,6 +132,9 @@
           <property name="whatsThis">
            <string/>
           </property>
+          <property name="alarmSensitiveBorder" stdset="0">
+           <bool>false</bool>
+          </property>
           <property name="channel" stdset="0">
            <string>ca://MTEST:TimePerDivision</string>
           </property>
@@ -154,6 +160,9 @@
           </property>
           <property name="whatsThis">
            <string/>
+          </property>
+          <property name="alarmSensitiveBorder" stdset="0">
+           <bool>false</bool>
           </property>
           <property name="channel" stdset="0">
            <string>ca://MTEST:TriggerDelay</string>
@@ -199,6 +208,9 @@
           <property name="whatsThis">
            <string/>
           </property>
+          <property name="alarmSensitiveBorder" stdset="0">
+           <bool>false</bool>
+          </property>
           <property name="channel" stdset="0">
            <string>ca://MTEST:VoltsPerDivision</string>
           </property>
@@ -225,6 +237,9 @@
           <property name="whatsThis">
            <string/>
           </property>
+          <property name="alarmSensitiveBorder" stdset="0">
+           <bool>false</bool>
+          </property>
           <property name="channel" stdset="0">
            <string>ca://MTEST:VoltOffset</string>
           </property>
@@ -250,7 +265,7 @@
   </customwidget>
   <customwidget>
    <class>PyDMEnumComboBox</class>
-   <extends>QWidget</extends>
+   <extends>QFrame</extends>
    <header>pydm.widgets.enum_combo_box</header>
   </customwidget>
  </customwidgets>
