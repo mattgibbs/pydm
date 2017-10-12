@@ -45,7 +45,7 @@ pvdb = {
         'StatusBits'       : { 'type' : 'int', 'value': 0b101010, 'lolim': 0, 'hilim': 32, 'asg' : 'default' },
         'YSignal'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
         'XSignal'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
-        'XSetpoint'        : { 'type' : 'float', 'value': 5500.0, 'asg': 'default' }
+        'XSetpoint'        : { 'type' : 'float', 'value': 4900.0, 'lolim': 4000, 'hilim': 6000, 'asg': 'default' }
 }
 
 def double_gaussian_2d(x, y, x0, y0, xsig, ysig):
@@ -68,6 +68,10 @@ class myDriver(Driver):
         self.tid = threading.Thread(target = self.runSimScope) 
         self.tid.setDaemon(True)
         self.tid.start()
+        self.imageEvent = threading.Event()
+        self.imageThread = threading.Thread(target=self.makeImages)
+        self.imageThread.setDaemon(True)
+        self.imageThread.start()
 
     def write(self, reason, value):
         status = True
@@ -78,16 +82,41 @@ class myDriver(Driver):
             if not self.getParam('Run') and value == 1:
                 self.eid.set()
                 self.eid.clear()
+                self.imageEvent.set()
+                self.imageEvent.clear()
         # store the values
         if status:
             self.setParam(reason, value)
         return status
 
-    def runSimScope(self):
-        # simulate scope waveform
+    def makeImages(self):
+        #Generate the image data
         x = numpy.linspace(-5.0,5.0,IMAGE_SIZE)
         y = numpy.linspace(-5.0,5.0,IMAGE_SIZE)
         xgrid,ygrid = numpy.meshgrid(x,y)
+        imageUpdateTime = 1.0
+        while True:
+            run = self.getParam('Run')
+            if run:
+                self.imageEvent.wait(imageUpdateTime)
+            else:
+                self.imageEvent.wait()
+            run = self.getParam('Run')
+            if not run: continue
+            x0 = 0.5*(numpy.random.rand()-0.5) + self.getParam('XPos')
+            y0 = 0.5*(numpy.random.rand()-0.5) - self.getParam('YPos')
+            xsig = 0.8 - 0.2*numpy.random.rand()
+            ysig = 0.8 - 0.2*numpy.random.rand()
+            z = gaussian_2d(xgrid,ygrid, x0, y0, xsig, ysig)
+            image_data = numpy.abs(256.0*(z)).flatten(order='C').astype(numpy.uint8, copy=False)
+            self.setParam('Image', image_data)
+            two_spots = double_gaussian_2d(xgrid, ygrid, x0, y0, xsig, ysig)
+            two_spot_image = numpy.abs(256.0*(two_spots)).flatten(order='C').astype(numpy.uint8, copy=False)
+            self.setParam('TwoSpotImage', two_spot_image)
+            self.updatePVs()
+
+    def runSimScope(self):
+        # simulate scope waveform
         while True:
             run = self.getParam('Run')
             updateTime = self.getParam('UpdateTime')
@@ -120,17 +149,7 @@ class myDriver(Driver):
             cos_data = NUM_DIVISIONS/2.0 + yScale * (cos_data + voltOffset)
             self.setParam('Waveform',  data)
             self.setParam('Cosine', cos_data)
-            #Generate the image data
-            x0 = 0.5*(numpy.random.rand()-0.5) + self.getParam('XPos')
-            y0 = 0.5*(numpy.random.rand()-0.5) - self.getParam('YPos')
-            xsig = 0.8 - 0.2*numpy.random.rand()
-            ysig = 0.8 - 0.2*numpy.random.rand()
-            z = gaussian_2d(xgrid,ygrid, x0, y0, xsig, ysig)
-            image_data = numpy.abs(256.0*(z)).flatten(order='C').astype(numpy.uint8, copy=False)
-            self.setParam('Image', image_data)
-            two_spots = double_gaussian_2d(xgrid, ygrid, x0, y0, xsig, ysig)
-            two_spot_image = numpy.abs(256.0*(two_spots)).flatten(order='C').astype(numpy.uint8, copy=False)
-            self.setParam('TwoSpotImage', two_spot_image)
+            
             
             #data for ICALEPCS2017 demo
             mean = 5500.0
@@ -162,6 +181,6 @@ if __name__ == '__main__':
         driver.setParam('ReadOnly', 0)
         # process CA transactions
         while True:
-            server.process(0.1)
+            server.process(0.03)
     except KeyboardInterrupt:
         print('\nInterrupted... finishing testing-ioc')
