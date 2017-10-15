@@ -44,7 +44,9 @@ pvdb = {
         'Float'            : { 'type' : 'float', 'value': 0.0, 'lolim': -1.2, 'lolo': -1.0, 'low': -0.8, 'high': 0.8, 'hihi': 1.0, 'hilim': 1.2, 'unit': 'mJ', 'prec': 3, 'asg' : 'default' },
         'StatusBits'       : { 'type' : 'int', 'value': 0b101010, 'lolim': 0, 'hilim': 32, 'asg' : 'default' },
         'YSignal'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
+        'YSignal2'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
         'XSignal'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
+        'XSignal2'          : { 'type' : 'float', 'count': 200, 'asg': 'default' },
         'XSetpoint'        : { 'type' : 'float', 'value': 4900.0, 'lolim': 4000, 'hilim': 6000, 'asg': 'default' }
 }
 
@@ -64,6 +66,10 @@ class myDriver(Driver):
         y = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, 200)
         self.setParam('XSignal', x)
         self.setParam('YSignal', y)
+        x2 = numpy.linspace(numpy.min(x), numpy.max(x), 200)
+        y2 = (-(signal_mean/mean)**2 * (x2-mean)**2) + signal_mean + numpy.random.normal(0, 0.01, 200)
+        self.setParam('YSignal2', y2)
+        self.setParam('XSignal2', x2)
         self.eid = threading.Event()
         self.tid = threading.Thread(target = self.runSimScope) 
         self.tid.setDaemon(True)
@@ -165,6 +171,16 @@ class myDriver(Driver):
             new_ysignal[-1] = y
             self.setParam('XSignal', new_xsignal)
             self.setParam('YSignal', new_ysignal)
+            #y2 = self.getParam('YSignal2')
+            #y2 = numpy.roll(y2, -1)
+            #x2 = self.getParam('XSignal2')
+            x2 = numpy.linspace(numpy.min(new_xsignal), numpy.max(new_xsignal), 200)
+            y2 = (-(signal_mean/mean)**2 * (x2-mean)**2) + signal_mean + numpy.random.normal(0, 0.01, 200)
+            self.setParam('YSignal2', y2)
+            self.setParam('XSignal2', x2)
+            #x2 = self.getParam('XSignal2')
+            #y2 = numpy.add((-(signal_mean/mean)**2 * (x-mean)**2), signal_mean) + numpy.random.normal(0, 0.01, 200)
+            #self.setParam('YSignal2', y2)
             # do updates so clients see the changes
             self.updatePVs()
 

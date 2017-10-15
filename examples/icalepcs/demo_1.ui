@@ -36,7 +36,7 @@
      </property>
      <property name="curves">
       <stringlist>
-       <string>{&quot;y_channel&quot;: &quot;ca://MTEST:YSignal&quot;, &quot;x_channel&quot;: &quot;ca://MTEST:XSignal&quot;, &quot;name&quot;: &quot;&quot;, &quot;color&quot;: &quot;yellow&quot;, &quot;connect_points&quot;: false, &quot;symbol&quot;: &quot;o&quot;, &quot;redraw_mode&quot;: 3}</string>
+       <string>{&quot;y_channel&quot;: &quot;ca://MTEST:YSignal2&quot;, &quot;x_channel&quot;: &quot;ca://MTEST:XSignal2&quot;, &quot;name&quot;: &quot;&quot;, &quot;color&quot;: &quot;yellow&quot;, &quot;connect_points&quot;: false, &quot;symbol&quot;: &quot;o&quot;, &quot;redraw_mode&quot;: 2}</string>
       </stringlist>
      </property>
      <property name="autoRangeX">
@@ -44,6 +44,19 @@
      </property>
      <property name="autoRangeY">
       <bool>true</bool>
+     </property>
+     <property name="minYRange">
+      <double>1.000000000000000</double>
+     </property>
+     <property name="maxYRange">
+      <double>2.200000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="peakLabel">
+     <property name="text">
+      <string>TextLabel</string>
      </property>
     </widget>
    </item>
