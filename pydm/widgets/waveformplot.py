@@ -457,7 +457,7 @@ class PyDMWaveformPlot(BasePlot):
         Request a redraw from each curve in the plot.
         Called by curves when they get new data.
         """
-        self.updateAxes()
+        #self.updateAxes()
         for curve in self._curves:
             curve.redrawCurve()
     
