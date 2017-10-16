@@ -64,6 +64,8 @@ PyDMIndicatorPlugin = qtplugin_factory(PyDMIndicator)
 
 # Label plugin
 PyDMLabelPlugin = qtplugin_factory(PyDMLabel)
+
+# Log Label
 PyDMLogLabelPlugin = qtplugin_factory(PyDMLogLabel)
 
 
@@ -77,8 +79,6 @@ PyDMLineEditPlugin = qtplugin_factory(PyDMLineEdit)
 
 # Push Button plugin
 PyDMPushButtonPlugin = qtplugin_factory(PyDMPushButton)
-PyDMStateButtonPlugin = qtplugin_factory(PyDMStateButton)
-
 
 # Related Display Button plugin
 PyDMRelatedDisplayButtonPlugin = qtplugin_factory(PyDMRelatedDisplayButton)
@@ -93,9 +93,11 @@ PyDMShellCommandPlugin = qtplugin_factory(PyDMShellCommand)
 # Slider plugin
 PyDMSliderPlugin = qtplugin_factory(PyDMSlider)
 
-
 # Spinbox plugin
 PyDMSpinboxplugin = qtplugin_factory(PyDMSpinbox)
+
+# State Button
+PyDMStateButtonPlugin = qtplugin_factory(PyDMStateButton)
 
 # Symbol plugin
 PyDMSymbolPlugin = qtplugin_factory(PyDMSymbol)
