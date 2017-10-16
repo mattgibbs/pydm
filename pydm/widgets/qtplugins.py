@@ -20,6 +20,8 @@ from .pushbutton import PyDMPushButton
 from .state_button import PyDMStateButton
 from .related_display_button import PyDMRelatedDisplayButton
 from .shell_command import PyDMShellCommand
+from .scrollbar import PyDMScrollBar
+from .QDoubleScrollBar import QDoubleScrollBar
 from .slider import PyDMSlider
 from .spinbox import PyDMSpinbox
 from .symbol import PyDMSymbol
@@ -80,6 +82,10 @@ PyDMStateButtonPlugin = qtplugin_factory(PyDMStateButton)
 
 # Related Display Button plugin
 PyDMRelatedDisplayButtonPlugin = qtplugin_factory(PyDMRelatedDisplayButton)
+
+# Scrollbar plugin
+QDoubleScrollBarPlugin = qtplugin_factory(QDoubleScrollBar)
+PyDMScrollBarPlugin = qtplugin_factory(PyDMScrollBar)
 
 # Shell Command plugin
 PyDMShellCommandPlugin = qtplugin_factory(PyDMShellCommand)
