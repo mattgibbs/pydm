@@ -1,4 +1,4 @@
-from .qtplugin_base import qtplugin_factory
+from .qtplugin_base import qtplugin_factory, WidgetCategory
 
 from .byte import PyDMByteIndicator
 
@@ -26,44 +26,46 @@ from .slider import PyDMSlider
 from .spinbox import PyDMSpinbox
 from .symbol import PyDMSymbol
 from .waveformtable import PyDMWaveformTable
+from .scale import PyDMScaleIndicator
 
 # Time Plot plugin
 from .timeplot_qtplugin import PyDMTimePlotPlugin
+
 # Waveform Plot plugin
 from .waveformplot_qtplugin import PyDMWaveformPlotPlugin
 
 # Byte plugin
-PyDMByteIndicatorPlugin = qtplugin_factory(PyDMByteIndicator)
+PyDMByteIndicatorPlugin = qtplugin_factory(PyDMByteIndicator, group=WidgetCategory.DISPLAY)
 
 # Checkbox plugin
-PyDMCheckboxPlugin = qtplugin_factory(PyDMCheckbox)
+PyDMCheckboxPlugin = qtplugin_factory(PyDMCheckbox, group=WidgetCategory.INPUT)
 
 # Drawing plugins
-PyDMDrawingImagePlugin = qtplugin_factory(PyDMDrawingImage)
-PyDMDrawingLinePlugin = qtplugin_factory(PyDMDrawingLine)
-PyDMDrawingRectanglePlugin = qtplugin_factory(PyDMDrawingRectangle)
-PyDMDrawingTrianglePlugin = qtplugin_factory(PyDMDrawingTriangle)
-PyDMDrawingEllipsePlugin = qtplugin_factory(PyDMDrawingEllipse)
-PyDMDrawingCirclePlugin = qtplugin_factory(PyDMDrawingCircle)
-PyDMDrawingArcPlugin = qtplugin_factory(PyDMDrawingArc)
-PyDMDrawingPiePlugin = qtplugin_factory(PyDMDrawingPie)
-PyDMDrawingChordPlugin = qtplugin_factory(PyDMDrawingChord)
+PyDMDrawingArcPlugin = qtplugin_factory(PyDMDrawingArc, group=WidgetCategory.DRAWING)
+PyDMDrawingChordPlugin = qtplugin_factory(PyDMDrawingChord, group=WidgetCategory.DRAWING)
+PyDMDrawingCirclePlugin = qtplugin_factory(PyDMDrawingCircle, group=WidgetCategory.DRAWING)
+PyDMDrawingEllipsePlugin = qtplugin_factory(PyDMDrawingEllipse, group=WidgetCategory.DRAWING)
+PyDMDrawingImagePlugin = qtplugin_factory(PyDMDrawingImage, group=WidgetCategory.DRAWING)
+PyDMDrawingLinePlugin = qtplugin_factory(PyDMDrawingLine, group=WidgetCategory.DRAWING)
+PyDMDrawingPiePlugin = qtplugin_factory(PyDMDrawingPie, group=WidgetCategory.DRAWING)
+PyDMDrawingRectanglePlugin = qtplugin_factory(PyDMDrawingRectangle, group=WidgetCategory.DRAWING)
+PyDMDrawingTrianglePlugin = qtplugin_factory(PyDMDrawingTriangle, group=WidgetCategory.DRAWING)
 
 # Embedded Display plugin
-PyDMEmbeddedDisplayPlugin = qtplugin_factory(PyDMEmbeddedDisplay)
+PyDMEmbeddedDisplayPlugin = qtplugin_factory(PyDMEmbeddedDisplay, group=WidgetCategory.DISPLAY)
 
 # Enum Combobox plugin
-PyDMEnumComboBoxPlugin = qtplugin_factory(PyDMEnumComboBox)
+PyDMEnumComboBoxPlugin = qtplugin_factory(PyDMEnumComboBox, group=WidgetCategory.INPUT)
 
 
 # Image plugin
-PyDMImageViewPlugin = qtplugin_factory(PyDMImageView)
+PyDMImageViewPlugin = qtplugin_factory(PyDMImageView, group=WidgetCategory.DISPLAY)
 
 # Indicator plugin
-PyDMIndicatorPlugin = qtplugin_factory(PyDMIndicator)
+PyDMIndicatorPlugin = qtplugin_factory(PyDMIndicator, group=WidgetCategory.DISPLAY)
 
 # Label plugin
-PyDMLabelPlugin = qtplugin_factory(PyDMLabel)
+PyDMLabelPlugin = qtplugin_factory(PyDMLabel, group=WidgetCategory.DISPLAY)
 
 # Log Label
 PyDMLogLabelPlugin = qtplugin_factory(PyDMLogLabel)
@@ -75,32 +77,35 @@ PyDMLedPlugin = qtplugin_factory(PyDMLed)
 
 
 # Line Edit plugin
-PyDMLineEditPlugin = qtplugin_factory(PyDMLineEdit)
+PyDMLineEditPlugin = qtplugin_factory(PyDMLineEdit, group=WidgetCategory.INPUT)
 
 # Push Button plugin
-PyDMPushButtonPlugin = qtplugin_factory(PyDMPushButton)
+PyDMPushButtonPlugin = qtplugin_factory(PyDMPushButton, group=WidgetCategory.INPUT)
 
 # Related Display Button plugin
-PyDMRelatedDisplayButtonPlugin = qtplugin_factory(PyDMRelatedDisplayButton)
+PyDMRelatedDisplayButtonPlugin = qtplugin_factory(PyDMRelatedDisplayButton, group=WidgetCategory.DISPLAY)
 
 # Scrollbar plugin
 QDoubleScrollBarPlugin = qtplugin_factory(QDoubleScrollBar)
 PyDMScrollBarPlugin = qtplugin_factory(PyDMScrollBar)
 
 # Shell Command plugin
-PyDMShellCommandPlugin = qtplugin_factory(PyDMShellCommand)
+PyDMShellCommandPlugin = qtplugin_factory(PyDMShellCommand, group=WidgetCategory.INPUT)
 
 # Slider plugin
-PyDMSliderPlugin = qtplugin_factory(PyDMSlider)
+PyDMSliderPlugin = qtplugin_factory(PyDMSlider, group=WidgetCategory.INPUT)
 
 # Spinbox plugin
-PyDMSpinboxplugin = qtplugin_factory(PyDMSpinbox)
+PyDMSpinboxplugin = qtplugin_factory(PyDMSpinbox, group=WidgetCategory.INPUT)
+
+# Scale Indicator plugin
+PyDMScaleIndicatorPlugin = qtplugin_factory(PyDMScaleIndicator, group=WidgetCategory.DISPLAY)
 
 # State Button
 PyDMStateButtonPlugin = qtplugin_factory(PyDMStateButton)
 
 # Symbol plugin
-PyDMSymbolPlugin = qtplugin_factory(PyDMSymbol)
+PyDMSymbolPlugin = qtplugin_factory(PyDMSymbol, group=WidgetCategory.DISPLAY)
 
 # Waveform Table plugin
-PyDMWaveformTablePlugin = qtplugin_factory(PyDMWaveformTable)
+PyDMWaveformTablePlugin = qtplugin_factory(PyDMWaveformTable, group=WidgetCategory.DISPLAY)
