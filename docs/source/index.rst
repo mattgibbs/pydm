@@ -11,15 +11,13 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   channel.rst
-   pushbutton.rst
-   lineedit.rst
+   getting_started.rst
+   scripted_displays.rst
    macros.rst
-   
+
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
