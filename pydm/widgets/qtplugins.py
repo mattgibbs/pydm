@@ -12,16 +12,10 @@ from .enum_combo_box import PyDMEnumComboBox
 from .image import PyDMImageView
 from .indicator import PyDMIndicator
 from .label import PyDMLabel
-from .log_label import PyDMLogLabel
-from .led import PyDMLed
-from .QLed import QLed
 from .line_edit import PyDMLineEdit
 from .pushbutton import PyDMPushButton
-from .state_button import PyDMStateButton
 from .related_display_button import PyDMRelatedDisplayButton
 from .shell_command import PyDMShellCommand
-from .scrollbar import PyDMScrollBar
-from .QDoubleScrollBar import QDoubleScrollBar
 from .slider import PyDMSlider
 from .spinbox import PyDMSpinbox
 from .symbol import PyDMSymbol
@@ -57,7 +51,6 @@ PyDMEmbeddedDisplayPlugin = qtplugin_factory(PyDMEmbeddedDisplay, group=WidgetCa
 # Enum Combobox plugin
 PyDMEnumComboBoxPlugin = qtplugin_factory(PyDMEnumComboBox, group=WidgetCategory.INPUT)
 
-
 # Image plugin
 PyDMImageViewPlugin = qtplugin_factory(PyDMImageView, group=WidgetCategory.DISPLAY)
 
@@ -67,15 +60,6 @@ PyDMIndicatorPlugin = qtplugin_factory(PyDMIndicator, group=WidgetCategory.DISPL
 # Label plugin
 PyDMLabelPlugin = qtplugin_factory(PyDMLabel, group=WidgetCategory.DISPLAY)
 
-# Log Label
-PyDMLogLabelPlugin = qtplugin_factory(PyDMLogLabel, group=WidgetCategory.DISPLAY)
-
-
-# Led plugin
-QLedPlugin = qtplugin_factory(QLed, group=WidgetCategory.DISPLAY)
-PyDMLedPlugin = qtplugin_factory(PyDMLed, group=WidgetCategory.DISPLAY)
-
-
 # Line Edit plugin
 PyDMLineEditPlugin = qtplugin_factory(PyDMLineEdit, group=WidgetCategory.INPUT)
 
@@ -84,10 +68,6 @@ PyDMPushButtonPlugin = qtplugin_factory(PyDMPushButton, group=WidgetCategory.INP
 
 # Related Display Button plugin
 PyDMRelatedDisplayButtonPlugin = qtplugin_factory(PyDMRelatedDisplayButton, group=WidgetCategory.DISPLAY)
-
-# Scrollbar plugin
-QDoubleScrollBarPlugin = qtplugin_factory(QDoubleScrollBar, group=WidgetCategory.INPUT)
-PyDMScrollBarPlugin = qtplugin_factory(PyDMScrollBar, group=WidgetCategory.INPUT)
 
 # Shell Command plugin
 PyDMShellCommandPlugin = qtplugin_factory(PyDMShellCommand, group=WidgetCategory.INPUT)
@@ -100,9 +80,6 @@ PyDMSpinboxplugin = qtplugin_factory(PyDMSpinbox, group=WidgetCategory.INPUT)
 
 # Scale Indicator plugin
 PyDMScaleIndicatorPlugin = qtplugin_factory(PyDMScaleIndicator, group=WidgetCategory.DISPLAY)
-
-# State Button
-PyDMStateButtonPlugin = qtplugin_factory(PyDMStateButton, group=WidgetCategory.INPUT)
 
 # Symbol plugin
 PyDMSymbolPlugin = qtplugin_factory(PyDMSymbol, group=WidgetCategory.DISPLAY)
