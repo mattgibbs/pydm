@@ -3,13 +3,13 @@ import numpy as np
 from ..plugin import PyDMPlugin, PyDMConnection
 from ...PyQt.QtCore import pyqtSlot, Qt
 
-int_types = set((epics.dbr.INT, epics.dbr.CTRL_INT, epics.dbr.TIME_INT, 
-                 epics.dbr.ENUM, epics.dbr.CTRL_ENUM, epics.dbr.TIME_ENUM, 
-                 epics.dbr.TIME_LONG, epics.dbr.LONG, epics.dbr.CTRL_LONG, 
-                 epics.dbr.CHAR, epics.dbr.TIME_CHAR, epics.dbr.CTRL_CHAR, 
+int_types = set((epics.dbr.INT, epics.dbr.CTRL_INT, epics.dbr.TIME_INT,
+                 epics.dbr.ENUM, epics.dbr.CTRL_ENUM, epics.dbr.TIME_ENUM,
+                 epics.dbr.TIME_LONG, epics.dbr.LONG, epics.dbr.CTRL_LONG,
+                 epics.dbr.CHAR, epics.dbr.TIME_CHAR, epics.dbr.CTRL_CHAR,
                  epics.dbr.TIME_SHORT, epics.dbr.CTRL_SHORT))
 
-float_types = set((epics.dbr.CTRL_FLOAT, epics.dbr.FLOAT, epics.dbr.TIME_FLOAT, 
+float_types = set((epics.dbr.CTRL_FLOAT, epics.dbr.FLOAT, epics.dbr.TIME_FLOAT,
                    epics.dbr.CTRL_DOUBLE, epics.dbr.DOUBLE, epics.dbr.TIME_DOUBLE))
 
 class Connection(PyDMConnection):
@@ -25,7 +25,7 @@ class Connection(PyDMConnection):
         self._unit = None
         self._upper_ctrl_limit = None
         self._lower_ctrl_limit = None
-  
+
     def clear_cache(self):
         self._severity = None
         self._precision = None
@@ -46,7 +46,7 @@ class Connection(PyDMConnection):
                     self.new_value_signal[float].emit(float(value))
                 else:
                     self.new_value_signal[str].emit(char_value)
-    
+
     def update_ctrl_vars(self, units=None, enum_strs=None, severity=None, upper_ctrl_limit=None, lower_ctrl_limit=None, precision=None, *args, **kws):
         if severity is not None and self._severity != severity:
             self._severity = severity
@@ -68,15 +68,15 @@ class Connection(PyDMConnection):
             self.unit_signal.emit(units)
         if upper_ctrl_limit is not None and self._upper_ctrl_limit != upper_ctrl_limit:
             self._upper_ctrl_limit = upper_ctrl_limit
-            self.upper_ctrl_limit_signal.emit(upper_ctrl_limit)    
+            self.upper_ctrl_limit_signal.emit(upper_ctrl_limit)
         if lower_ctrl_limit is not None and self._lower_ctrl_limit != lower_ctrl_limit:
             self._lower_ctrl_limit = lower_ctrl_limit
-            self.lower_ctrl_limit_signal.emit(lower_ctrl_limit)    
+            self.lower_ctrl_limit_signal.emit(lower_ctrl_limit)
 
     def send_access_state(self, read_access, write_access, *args, **kws):
         if write_access is not None:
             self.write_access_signal.emit(write_access)
-    
+
     def reload_access_state(self):
         read_access = epics.ca.read_access(self.pv.chid)
         write_access = epics.ca.write_access(self.pv.chid)
@@ -97,7 +97,7 @@ class Connection(PyDMConnection):
     def put_value(self, new_val):
         if self.pv.write_access:
             self.pv.put(new_val)
-    
+
     def add_listener(self, channel):
         super(Connection, self).add_listener(channel)
         # If we are adding a listener to an already existing PV, we need to
@@ -105,7 +105,7 @@ class Connection(PyDMConnection):
         if epics.ca.isConnected(self.pv.chid):
             self.send_connection_state(conn=True)
             self.pv.run_callbacks()
-        # If the channel is used for writing to PVs, hook it up to the 'put' methods.  
+        # If the channel is used for writing to PVs, hook it up to the 'put' methods.
         if channel.value_signal is not None:
             try:
                 channel.value_signal[str].connect(self.put_value, Qt.QueuedConnection)
@@ -126,6 +126,7 @@ class Connection(PyDMConnection):
 
     def close(self):
         self.pv.disconnect()
+        del self.pv
 
 class PyEPICSPlugin(PyDMPlugin):
     # NOTE: protocol is intentionally "None" to keep this plugin from getting directly imported.
