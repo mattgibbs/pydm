@@ -164,7 +164,10 @@ class PyDMImageView(ImageView, PyDMWidget, _ColormapMap, _ReadingOrderMap):
         self.image_waveform = new_image
         self.needs_redraw = True
         if self.data_max_int is None:
-            self.data_max_int = np.iinfo(self.image_waveform.dtype).max
+            if np.issubdtype(self.image_waveform.dtype, np.integer):
+                self.data_max_int = np.iinfo(self.image_waveform.dtype).max
+            elif np.issubdtype(self.image_waveform.dtype, np.inexact):
+                self.data_max_int = np.finfo(self.image_waveform.dtype).max
 
     def _reshapeImage(self, image):
         """Reshape the image according to the imageWidth and readingOrder."""
@@ -187,7 +190,7 @@ class PyDMImageView(ImageView, PyDMWidget, _ColormapMap, _ReadingOrderMap):
         """
         if new_width is None:
             return
-        self.imageWidth = new_width
+        self._image_width = new_width
 
     def redrawImage(self):
         """Set the image data into the ImageItem."""
@@ -493,7 +496,7 @@ class PyDMImageView(ImageView, PyDMWidget, _ColormapMap, _ReadingOrderMap):
         """
         return [
             PyDMChannel(address=self.imageChannel,
-                        connection_slot=self.connectionStateChanged,
+                        connection_slot=self.image_connection_state_changed,
                         value_slot=self.image_value_changed,
                         severity_slot=self.alarmSeverityChanged),
             PyDMChannel(address=self.widthChannel,
