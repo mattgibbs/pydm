@@ -14,6 +14,8 @@ Contents:
    getting_started.rst
    scripted_displays.rst
    macros.rst
+   widgets/index.rst
+   application.rst
 
 Indices and tables
 ==================
