@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'pydm.ui'
 #
-# Created by: PyQt5 UI code generator 5.9
+# Created by: PyQt5 UI code generator 5.6
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -62,6 +62,14 @@ class Ui_MainWindow(object):
         self.actionShow_Navigation_Bar.setObjectName("actionShow_Navigation_Bar")
         self.actionOpen_File = QtGui.QAction(MainWindow)
         self.actionOpen_File.setObjectName("actionOpen_File")
+        self.actionShow_Menu_Bar = QtGui.QAction(MainWindow)
+        self.actionShow_Menu_Bar.setCheckable(True)
+        self.actionShow_Menu_Bar.setChecked(True)
+        self.actionShow_Menu_Bar.setObjectName("actionShow_Menu_Bar")
+        self.actionShow_Status_Bar = QtGui.QAction(MainWindow)
+        self.actionShow_Status_Bar.setCheckable(True)
+        self.actionShow_Status_Bar.setChecked(True)
+        self.actionShow_Status_Bar.setObjectName("actionShow_Status_Bar")
         self.menuFile.addAction(self.actionOpen_File)
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionEdit_in_Designer)
@@ -73,6 +81,8 @@ class Ui_MainWindow(object):
         self.menuView.addSeparator()
         self.menuView.addAction(self.actionShow_File_Path_in_Title_Bar)
         self.menuView.addAction(self.actionShow_Navigation_Bar)
+        self.menuView.addAction(self.actionShow_Menu_Bar)
+        self.menuView.addAction(self.actionShow_Status_Bar)
         self.menuHistory.addAction(self.actionBack)
         self.menuHistory.addAction(self.actionForward)
         self.menuHistory.addAction(self.actionHome)
@@ -97,19 +107,14 @@ class Ui_MainWindow(object):
         self.actionEdit_in_Designer.setText(_translate("MainWindow", "Edit in Designer"))
         self.actionAbout_PyDM.setText(_translate("MainWindow", "About PyDM"))
         self.actionReload_Display.setText(_translate("MainWindow", "Reload Display"))
-        self.actionReload_Display.setShortcut(_translate("MainWindow", "Ctrl+R"))
         self.actionIncrease_Font_Size.setText(_translate("MainWindow", "Increase Font Size"))
-        self.actionIncrease_Font_Size.setShortcut(_translate("MainWindow", "Ctrl+="))
         self.actionDecrease_Font_Size.setText(_translate("MainWindow", "Decrease Font Size"))
-        self.actionDecrease_Font_Size.setShortcut(_translate("MainWindow", "Ctrl+-"))
         self.actionShow_File_Path_in_Title_Bar.setText(_translate("MainWindow", "Show File Path in Title Bar"))
         self.actionBack.setText(_translate("MainWindow", "Back"))
-        self.actionBack.setShortcut(_translate("MainWindow", "Ctrl+Left"))
         self.actionForward.setText(_translate("MainWindow", "Forward"))
-        self.actionForward.setShortcut(_translate("MainWindow", "Ctrl+Right"))
         self.actionHome.setText(_translate("MainWindow", "Home"))
-        self.actionHome.setShortcut(_translate("MainWindow", "Ctrl+Shift+H"))
         self.actionShow_Navigation_Bar.setText(_translate("MainWindow", "Show Navigation Bar"))
         self.actionOpen_File.setText(_translate("MainWindow", "Open File..."))
-        self.actionOpen_File.setShortcut(_translate("MainWindow", "Ctrl+O"))
+        self.actionShow_Menu_Bar.setText(_translate("MainWindow", "Show Menu Bar"))
+        self.actionShow_Status_Bar.setText(_translate("MainWindow", "Show Status Bar"))
 
