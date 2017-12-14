@@ -151,15 +151,17 @@ class PyDMImageView(ImageView, PyDMWidget, _ColormapMap, _ReadingOrderMap):
     def image_value_changed(self, new_image):
         """
         Callback invoked when the Image Channel value is changed.
-
-        Reshape and display the new image.
+        We try to do as little as possible in this method, because it
+        gets called every time the image channel updates, which might
+        be extremely often.  Basically just store the data, and set
+        a flag requesting that the image be redrawn.
 
         Parameters
         ----------
         new_image : np.ndarray
             The new image data as a flat array
         """
-        if new_image is None:
+        if new_image is None or new_image.size == 0:
             return
         self.image_waveform = new_image
         self.needs_redraw = True
@@ -181,8 +183,6 @@ class PyDMImageView(ImageView, PyDMWidget, _ColormapMap, _ReadingOrderMap):
         """
         Callback invoked when the Image Width Channel value is changed.
 
-        Reshape the image data and triggers a ```redrawImage```
-
         Parameters
         ----------
         new_width : int
@@ -193,7 +193,10 @@ class PyDMImageView(ImageView, PyDMWidget, _ColormapMap, _ReadingOrderMap):
         self._image_width = new_width
 
     def redrawImage(self):
-        """Set the image data into the ImageItem."""
+        """
+        Set the image data into the ImageItem, if needed.
+        If necessary, reshape the image to 2D first.
+        """
         if not self.needs_redraw:
             return
         image_dimensions = len(self.image_waveform.shape)
