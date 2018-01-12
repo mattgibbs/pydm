@@ -1,9 +1,8 @@
 import functools
 import numpy as np
-from ..PyQt.QtGui import QApplication, QColor, QCursor
+from ..PyQt.QtGui import QApplication, QColor, QCursor, QMenu
 from ..PyQt.QtCore import Qt, QEvent, pyqtSignal, pyqtSlot, pyqtProperty
 from .channel import PyDMChannel
-from ..application import PyDMApplication
 from ..utilities import is_pydm_app
 
 
@@ -156,6 +155,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
 
     def __init__(self, init_channel=None):
         super(PyDMWidget, self).__init__()
+        self.app = QApplication.instance()
         self._connected = True
         self._color = self.local_connection_status_color_map[False]
         self._channel = init_channel
@@ -187,6 +187,36 @@ class PyDMWidget(PyDMPrimitiveWidget):
             self._connected = False
             self.alarmSeverityChanged(self.ALARM_DISCONNECTED)
             self.check_enable_state()
+
+            self.setContextMenuPolicy(Qt.CustomContextMenu)
+            self.customContextMenuRequested.connect(self.open_context_menu)
+
+    def context_menu(self):
+        """
+        Generates the custom context menu, and populates it with any external
+        tools that have been loaded.  PyDMWidget subclasses should override
+        this method (after calling superclass implementation) to add the menu.
+        
+        Returns
+        -------
+        QMenu
+        """
+        menu = QMenu(self)
+        kwargs = {'channels': self.channels_for_tools(), 'sender': self}
+        self.app.assemble_tools_menu(menu, widget_only=True, **kwargs)
+        return menu
+
+    def open_context_menu(self, position):
+        """
+        Handler for when the Custom Context Menu is requested.
+
+        Parameters
+        ----------
+        position : QPoint
+        """
+        menu = self.context_menu()
+        menu.exec_(self.mapToGlobal(position))
+        del menu
 
     def init_for_designer(self):
         """
@@ -651,7 +681,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
     def restore_original_tooltip(self):
         if self._tooltip is None:
             self._tooltip = self.toolTip()
-        return self._tooltip 
+        return self._tooltip
 
     @only_if_channel_set
     def check_enable_state(self):
@@ -707,6 +737,20 @@ class PyDMWidget(PyDMPrimitiveWidget):
         ]
         return self._channels
 
+    def channels_for_tools(self):
+        """
+        Returns a list of channels useful for external tools.
+        The default implementation here is just to return
+        self.channels(), but some widgets will want to re-implement
+        this, especially if they have multiple channels, but only
+        one real 'signal' channel.
+
+        Returns
+        -------
+        list
+        """
+        return self.channels()
+
 
 class PyDMWritableWidget(PyDMWidget):
     """
@@ -732,6 +776,7 @@ class PyDMWritableWidget(PyDMWidget):
     def __init__(self, init_channel=None):
         self._write_access = False
         super(PyDMWritableWidget, self).__init__(init_channel=init_channel)
+        self.app = QApplication.instance()
         # We should  install the Event Filter only if we are running
         # and not at the Designer
         if is_pydm_app():
@@ -815,7 +860,10 @@ class PyDMWritableWidget(PyDMWidget):
             tooltip += "PV is disconnected."
         elif not self._write_access:
             if tooltip != '': tooltip += '\n'
-            tooltip += "Access denied by Channel Access Security."
+            if is_pydm_app() and self.app.is_read_only():
+                tooltip += "Running PyDM on Read-Only mode."
+            else:
+                tooltip += "Access denied by Channel Access Security."
         self.setToolTip(tooltip)
         self.setEnabled(status)
 
@@ -825,7 +873,7 @@ class PyDMWritableWidget(PyDMWidget):
 
         Returns
         -------
-        channels : list
+        list
             List of PyDMChannel objects
         """
         if self._channels is not None:

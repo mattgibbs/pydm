@@ -1,7 +1,12 @@
 import epics
+import logging
 import numpy as np
-from ..plugin import PyDMPlugin, PyDMConnection
-from ...PyQt.QtCore import pyqtSlot, Qt
+from pydm.data_plugins.plugin import PyDMPlugin, PyDMConnection
+from pydm.PyQt.QtCore import pyqtSlot, Qt
+from pydm.PyQt.QtGui import QApplication
+from pydm.utilities import is_pydm_app
+
+logger = logging.getLogger(__name__)
 
 int_types = set((epics.dbr.INT, epics.dbr.CTRL_INT, epics.dbr.TIME_INT,
                  epics.dbr.ENUM, epics.dbr.CTRL_ENUM, epics.dbr.TIME_ENUM,
@@ -12,13 +17,16 @@ int_types = set((epics.dbr.INT, epics.dbr.CTRL_INT, epics.dbr.TIME_INT,
 float_types = set((epics.dbr.CTRL_FLOAT, epics.dbr.FLOAT, epics.dbr.TIME_FLOAT,
                    epics.dbr.CTRL_DOUBLE, epics.dbr.DOUBLE, epics.dbr.TIME_DOUBLE))
 
+
 class Connection(PyDMConnection):
-    def __init__(self, channel, pv, parent=None):
-        super(Connection, self).__init__(channel, pv, parent)
+
+    def __init__(self, channel, pv, protocol=None, parent=None):
+        super(Connection, self).__init__(channel, pv, protocol, parent)
         self.pv = epics.PV(pv, connection_callback=self.send_connection_state, form='ctrl', auto_monitor=True, access_callback=self.send_access_state)
         self.pv.add_callback(self.send_new_value, with_ctrlvars=True)
         self.add_listener(channel)
 
+        self.app = QApplication.instance()
         self._severity = None
         self._precision = None
         self._enum_strs = None
@@ -34,14 +42,20 @@ class Connection(PyDMConnection):
         self._upper_ctrl_limit = None
         self._lower_ctrl_limit = None
 
-    def send_new_value(self, value=None, char_value=None, count=None, ftype=None, *args, **kws):
+    def send_new_value(self, value=None, char_value=None, count=None, ftype=None, type=None, *args, **kws):
         self.update_ctrl_vars(**kws)
         if value is not None:
             if isinstance(value, np.ndarray):
                 self.new_value_signal[np.ndarray].emit(value)
             else:
                 if ftype in int_types:
-                    self.new_value_signal[int].emit(int(value))
+                    try:
+                        self.new_value_signal[int].emit(int(value))
+                    except ValueError:  # This happens when a string is empty
+                        # HACK since looks like for PyEpics a 1 element array
+                        # is in fact a scalar. =( I will try to address this
+                        # with Matt Newville
+                        self.new_value_signal[str].emit(char_value)
                 elif ftype in float_types:
                     self.new_value_signal[float].emit(float(value))
                 else:
@@ -74,6 +88,10 @@ class Connection(PyDMConnection):
             self.lower_ctrl_limit_signal.emit(lower_ctrl_limit)
 
     def send_access_state(self, read_access, write_access, *args, **kws):
+        if is_pydm_app() and self.app.is_read_only():
+            self.write_access_signal.emit(False)
+            return
+
         if write_access is not None:
             self.write_access_signal.emit(write_access)
 
@@ -83,6 +101,7 @@ class Connection(PyDMConnection):
         self.send_access_state(read_access, write_access)
 
     def send_connection_state(self, conn=None, *args, **kws):
+        self.connected = conn
         self.connection_state_signal.emit(conn)
         if conn:
             self.clear_cache()
@@ -95,8 +114,15 @@ class Connection(PyDMConnection):
     @pyqtSlot(str)
     @pyqtSlot(np.ndarray)
     def put_value(self, new_val):
+        if is_pydm_app() and self.app.is_read_only():
+            return
+
         if self.pv.write_access:
-            self.pv.put(new_val)
+            try:
+                self.pv.put(new_val)
+            except Exception as e:
+                logger.exception("Unable to put %s to %s.  Exception: %s",
+                                 new_val, self.pv.pvname, str(e))
 
     def add_listener(self, channel):
         super(Connection, self).add_listener(channel)
@@ -150,6 +176,7 @@ class Connection(PyDMConnection):
     def close(self):
         self.pv.disconnect()
         del self.pv
+
 
 class PyEPICSPlugin(PyDMPlugin):
     # NOTE: protocol is intentionally "None" to keep this plugin from getting directly imported.

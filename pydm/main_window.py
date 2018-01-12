@@ -1,11 +1,13 @@
 import os
 from os import path, environ
 from functools import partial
-from .PyQt.QtGui import QApplication, QMainWindow, QFileDialog, QWidget, QShortcut, QKeySequence
+from .PyQt.QtGui import QApplication, QMainWindow, QFileDialog, QWidget, QAction
 from .PyQt.QtCore import Qt, QTimer, pyqtSlot, QSize, QLibraryInfo
 from .utilities import IconFont
 from .pydm_ui import Ui_MainWindow
 from .display_module import Display
+from .connection_inspector import ConnectionInspector
+from .about_pydm import AboutWindow
 import subprocess
 import platform
 
@@ -45,24 +47,21 @@ class PyDMMainWindow(QMainWindow):
         self.ui.actionShow_File_Path_in_Title_Bar.triggered.connect(self.toggle_file_path_in_title_bar)
         self.ui.actionShow_Navigation_Bar.triggered.connect(self.toggle_nav_bar)
         self.ui.actionShow_Menu_Bar.triggered.connect(self.toggle_menu_bar)
-
-        # We need the shortcuts to be on the application level so they
-        # can be executed even when the menu is hidden
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_M), self, partial(self.toggle_menu_bar, None))
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_R), self, partial(self.reload_display, None))
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Equal), self, partial(self.increase_font_size, None))
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Minus), self, partial(self.decrease_font_size, None))
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Left), self, self.back)
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Right), self, self.forward)
-        QShortcut(QKeySequence(Qt.SHIFT + Qt.CTRL + Qt.Key_H), self, self.home)
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_O), self, partial(self.open_file_action, None))
-
         self.ui.actionShow_Status_Bar.triggered.connect(self.toggle_status_bar)
+        self.ui.actionShow_Connections.triggered.connect(self.show_connections)
+        self.ui.actionAbout_PyDM.triggered.connect(self.show_about_window)
+        self.ui.actionLoadTool.triggered.connect(self.load_tool)
+        self.ui.actionLoadTool.setIcon(self.iconFont.icon("rocket"))
+
+        self._saved_menu_geometry = None
+        self._saved_menu_height = None
         self._new_widget_size = None
         if hide_nav_bar:
             self.toggle_nav_bar(False)
         if hide_menu_bar:
-            self.toggle_menu_bar(False)
+            # Toggle the menu bar via the QAction so that the menu item
+            # stays in sync with menu visibility.
+            self.ui.actionShow_Menu_Bar.activate(QAction.Trigger)
         if hide_status_bar:
             self.toggle_status_bar(False)
         self.designer_path = None
@@ -224,9 +223,13 @@ class PyDMMainWindow(QMainWindow):
 
     def update_window_title(self):
         if self.showing_file_path_in_title_bar:
-            self.setWindowTitle(self.current_file() + " - PyDM")
+            title = self.current_file()
         else:
-            self.setWindowTitle(self._display_widget.windowTitle() + " - PyDM")
+            title = self._display_widget.windowTitle()
+        title += " - PyDM"
+        if self.app.is_read_only():
+            title += " [Read Only Mode]"
+        self.setWindowTitle(title)
 
     @property
     def showing_file_path_in_title_bar(self):
@@ -248,11 +251,18 @@ class PyDMMainWindow(QMainWindow):
     @pyqtSlot(bool)
     def toggle_menu_bar(self, checked=None):
         if checked is None:
-            if self.ui.menubar.isVisible():
-                checked = False
-            else:
-                checked = True
-        self.ui.menubar.setHidden(not checked)
+            checked = not self.ui.menubar.isVisible()
+        # Crazy hack: we can't just do menubar.setVisible(), because that
+        # will disable all the QActions and their keyboard shortcuts when
+        # we hide the menu.  So instead, we set it to a height of 0 to hide
+        # it, and then restore the previous height value to show it again.
+        if checked:
+            self.ui.menubar.restoreGeometry(self._saved_menu_geometry)
+            self.ui.menubar.setFixedHeight(self._saved_menu_height)
+        else:
+            self._saved_menu_geometry = self.ui.menubar.saveGeometry()
+            self._saved_menu_height = self.ui.menubar.height()
+            self.ui.menubar.setFixedHeight(0)
 
     @pyqtSlot(bool)
     def toggle_status_bar(self, checked):
@@ -307,6 +317,14 @@ class PyDMMainWindow(QMainWindow):
             except (IOError, OSError, ValueError, ImportError) as e:
                 self.handle_open_file_error(filename, e)
 
+    def load_tool(self, checked):
+        filename = QFileDialog.getOpenFileName(self, 'Load tool...', os.path.dirname(self.current_file()), 'PyDM External Tool Files (*_tool.py)')
+        filename = filename[0] if isinstance(filename, (list, tuple)) else filename
+
+        if filename:
+            filename = str(filename)
+            self.app.install_external_tool(filename)
+
     @pyqtSlot(bool)
     def reload_display(self, checked):
         self.statusBar().showMessage("Reloading '{0}'...".format(self.current_file()), 5000)
@@ -325,6 +343,16 @@ class PyDMMainWindow(QMainWindow):
         current_font.setPointSizeF(current_font.pointSizeF() / 1.1)
         QApplication.instance().setFont(current_font)
         QTimer.singleShot(0, self.resizeForNewDisplayWidget)
+
+    @pyqtSlot(bool)
+    def show_connections(self, checked):
+        c = ConnectionInspector(self.app.list_all_connections(), self)
+        c.show()
+    
+    @pyqtSlot(bool)
+    def show_about_window(self, checked):
+        a = AboutWindow(self)
+        a.show()
 
     def resizeForNewDisplayWidget(self):
         self.resize(self._new_widget_size)

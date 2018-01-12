@@ -1,10 +1,12 @@
-from .plugin import PyDMPlugin, PyDMConnection
-from ..PyQt.QtCore import QTimer, pyqtSignal, Qt
+from pydm.data_plugins.plugin import PyDMPlugin, PyDMConnection
+from pydm.PyQt.QtCore import QTimer
 import random
 
+
 class Connection(PyDMConnection):
-    def __init__(self, widget, address, parent=None):
-        super(Connection, self).__init__(widget, address, parent)
+
+    def __init__(self, widget, address, protocol=None, parent=None):
+        super(Connection, self).__init__(widget, address, protocol, parent)
         self.add_listener(widget)
         self.value = address
         self.rand = 0
@@ -12,15 +14,17 @@ class Connection(PyDMConnection):
         self.timer.timeout.connect(self.send_new_value)
         self.timer.start(1000)
         self.send_connection_state(True)
+        self.connected = True
 
     def send_new_value(self):
-        val_to_send = "{0}-{1}".format(self.value, random.randint(0,9))
+        val_to_send = "{0}-{1}".format(self.value, random.randint(0, 9))
         self.new_value_signal.emit(str(val_to_send))
-        
+
     def send_connection_state(self, conn):
         self.connection_state_signal.emit(conn)
+
 
 class FakePlugin(PyDMPlugin):
     protocol = "fake"
     connection_class = Connection
-            
+
