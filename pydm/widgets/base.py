@@ -687,8 +687,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
         """
         self.format_string = "{}"
         if isinstance(self.value, (int, float)):
-            number_len = str(len(str(int(abs(self.value)))) + self._prec)
-            self.format_string = "{:." + number_len + "n}"
+            self.format_string = "{:." + str(self._prec) + "f}"
         if self._show_units and self._unit != "":
             self.format_string += " {}".format(self._unit)
         return self.format_string
@@ -765,7 +764,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
         list
         """
         return self.channels()
-        
+
     def qcolor_for_alarm(self, alarm, alarm_type=ALARM_CONTENT):
         return QColor(self.alarm_style_sheet_map[alarm_type][alarm]["color"])
 
