@@ -33,6 +33,7 @@ as well as a straightforward python framework to build complex applications.
 * :ref:`search`
 =======
    channel.rst
+   utilities/index.rst
 
 .. toctree::
    :maxdepth: 1
@@ -40,3 +41,11 @@ as well as a straightforward python framework to build complex applications.
 
    development/development.rst
    development/resources.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Links
+   :hidden:
+
+   PyDM GitHub <https://github.com/slaclab/pydm>
+   SLAC-wide GitHub <https://github.com/slaclab>
