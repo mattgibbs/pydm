@@ -1,10 +1,15 @@
 import math
 import os
+import logging
+
 from ..PyQt.QtGui import QApplication, QWidget, QColor, QPainter, QBrush, QPen, QPolygon, QPixmap, QStyle, QStyleOption
 from ..PyQt.QtCore import pyqtProperty, Qt, QPoint, QSize, pyqtSlot
 from ..PyQt.QtDesigner import QDesignerFormWindowInterface
 from .base import PyDMWidget
 from ..utilities import is_pydm_app
+
+logger = logging.getLogger(__name__)
+
 
 def deg_to_qt(deg):
     """
@@ -68,7 +73,7 @@ class PyDMDrawing(QWidget, PyDMWidget):
         self._pen_color = QColor(0, 0, 0)
 
     def sizeHint(self):
-        return QSize(100,100)
+        return QSize(100, 100)
 
     def paintEvent(self, _):
         """
@@ -91,7 +96,7 @@ class PyDMDrawing(QWidget, PyDMWidget):
         self._painter.setRenderHint(QPainter.Antialiasing)
 
         color = self._default_color
-        if self._alarm_sensitive_content and self._alarm_state != 0 and self.channels() is not None:
+        if self._alarm_sensitive_content and self._alarm_state != PyDMWidget.ALARM_NONE and self.channels() is not None:
             alarm_color = self._style.get("color", None)
             if alarm_color is not None:
                 color = QColor(alarm_color)
@@ -193,7 +198,7 @@ class PyDMDrawing(QWidget, PyDMWidget):
         bool
             True if the drawing has a border, False otherwise.
         """
-        if self._pen.style() != Qt.NoPen and self._pen.width() > 0:
+        if self._pen.style() != Qt.NoPen and self._pen_width > 0:
             return True
         else:
             return False
@@ -225,6 +230,15 @@ class PyDMDrawing(QWidget, PyDMWidget):
         angle = math.radians(self._rotation)
         origWidth = self.width()
         origHeight = self.height()
+
+        if origWidth == 0:
+            logger.error("Invalid width. The value must be greater than {0}".format(origWidth))
+            return
+
+        if origHeight == 0:
+            logger.error("Invalid height. The value must be greater than {0}".format(origHeight))
+            return
+
         if (origWidth <= origHeight):
             w0 = origWidth
             h0 = origHeight
@@ -234,7 +248,7 @@ class PyDMDrawing(QWidget, PyDMWidget):
         # Angle normalization in range [-PI..PI)
         ang = angle - math.floor((angle + math.pi) / (2 * math.pi)) * 2 * math.pi
         ang = math.fabs(ang)
-        if (ang > math.pi / 2):
+        if ang > math.pi / 2:
             ang = math.pi - ang
         c = w0 / (h0 * math.sin(ang) + w0 * math.cos(ang))
         w = 0
@@ -407,7 +421,7 @@ class PyDMDrawingLine(PyDMDrawing):
 
 class PyDMDrawingImage(PyDMDrawing):
     """
-    Renders an image given by the ```filename``` property.
+    Renders an image given by the ``filename`` property.
     This class inherits from PyDMDrawing.
 
     Parameters
@@ -416,19 +430,33 @@ class PyDMDrawingImage(PyDMDrawing):
         The parent widget for the Label
     init_channel : str, optional
         The channel to be used by the widget.
+
+    Attributes
+    ----------
+    null_color : Qt.Color
+        QColor to fill the image if the filename is not found.
     """
+    null_color = Qt.gray
+
     def __init__(self, parent=None, init_channel=None, filename=""):
         super(PyDMDrawingImage, self).__init__(parent, init_channel)
-        self._pixmap = QPixmap()
+        hint = super(PyDMDrawingImage, self).sizeHint()
+        self._pixmap = QPixmap(hint)
+        self._pixmap.fill(self.null_color)
         self._aspect_ratio_mode = Qt.KeepAspectRatio
-        self.filename = filename
+        # Make sure we don't set a non-existant file
+        if filename:
+            self.filename = filename
+        # But we always have an internal value to reference
+        else:
+            self._file = filename
         if not is_pydm_app():
             designer_window = self.get_designer_window()
             if designer_window is not None:
                 designer_window.fileNameChanged.connect(self.designer_form_saved)
 
     def get_designer_window(self):
-        #Internal function to find the designer window that owns this widget.
+        # Internal function to find the designer window that owns this widget.
         p = self.parent()
         while p is not None:
             if isinstance(p, QDesignerFormWindowInterface):
@@ -457,26 +485,48 @@ class PyDMDrawingImage(PyDMDrawing):
     def filename(self, new_file):
         """
         The filename of the image to be displayed.
-        This can be an absolute or relative path to the display file.
+
+        This file can be either relative to the ``.ui`` file or absolute. If
+        the path does not exist, a shape of ``.null_color`` will be displayed
+        instead.
 
         Parameters
         -------
         new_file : str
             The filename to be used
         """
+        # Expand user (~ or ~user) and environment variables.
         self._file = new_file
-        path_relative_to_ui_file = self._file
-        if not os.path.isabs(self._file):                
+        abs_path = os.path.expanduser(os.path.expandvars(self._file))
+        is_app = is_pydm_app()
+        # Find the absolute path relative to UI
+        if not os.path.isabs(abs_path):
             try:
-                if is_pydm_app():
-                    path_relative_to_ui_file = QApplication.instance().get_path(self._file)
+                # Based on the QApplication
+                if is_app:
+                    abs_path = QApplication.instance().get_path(abs_path)
+                # Based on the QtDesigner
                 else:
                     p = self.get_designer_window()
                     if p is not None:
-                        path_relative_to_ui_file = os.path.join(p.absoluteDir().absolutePath(), self._file)
-            except Exception as e:
-                print(e)
-        self._pixmap = QPixmap(path_relative_to_ui_file)
+                        ui_dir = p.absoluteDir().absolutePath()
+                        abs_path = os.path.join(ui_dir, abs_path)
+            except Exception:
+                logger.exception("Unable to find full filepath for %s",
+                                 self._file)
+        # Check that the path exists
+        if os.path.isfile(abs_path):
+            pixmap = QPixmap(abs_path)
+        # Return a blank image if we don't have a valid path
+        else:
+            # Warn the user loudly if their file does not exist, but avoid
+            # doing this in Designer as this spams the user as they are typing
+            if is_app:
+                logger.error("Image file  %r does not exist", abs_path)
+            pixmap = QPixmap(self.sizeHint())
+            pixmap.fill(self.null_color)
+        # Update the display
+        self._pixmap = pixmap
         self.update()
 
     def sizeHint(self):
@@ -521,6 +571,13 @@ class PyDMDrawingImage(PyDMDrawing):
         x, y, w, h = self.get_bounds(maxsize=True, force_no_pen=True)
         _scaled = self._pixmap.scaled(w, h, self._aspect_ratio_mode,
                                       Qt.SmoothTransformation)
+        # Make sure the image is centered if smaller than the widget itself
+        if w > _scaled.width():
+            logger.debug("Centering image horizontally ...")
+            x += (w-_scaled.width())/2
+        if h > _scaled.height():
+            logger.debug("Centering image vertically ...")
+            y += (h - _scaled.height())/2
         self._painter.drawPixmap(x, y, _scaled)
 
 
@@ -564,6 +621,13 @@ class PyDMDrawingTriangle(PyDMDrawing):
     def __init__(self, parent=None, init_channel=None):
         super(PyDMDrawingTriangle, self).__init__(parent, init_channel)
 
+    def _calculate_drawing_points(self, x, y, w, h):
+        return [
+            QPoint(x, h / 2.0),
+            QPoint(x, y),
+            QPoint(w / 2.0, y)
+        ]
+
     def draw_item(self):
         """
         Draws the triangle after setting up the canvas with a call to
@@ -571,11 +635,8 @@ class PyDMDrawingTriangle(PyDMDrawing):
         """
         super(PyDMDrawingTriangle, self).draw_item()
         x, y, w, h = self.get_bounds(maxsize=True)
-        points = [
-            QPoint(x, h / 2.0),
-            QPoint(x, y),
-            QPoint(w / 2.0, y)
-        ]
+        points = self._calculate_drawing_points(x, y, w, h)
+
         self._painter.drawPolygon(QPolygon(points))
 
 
@@ -619,6 +680,9 @@ class PyDMDrawingCircle(PyDMDrawing):
     def __init__(self, parent=None, init_channel=None):
         super(PyDMDrawingCircle, self).__init__(parent, init_channel)
 
+    def _calculate_radius(self, width, height):
+        return min(width, height) / 2.0
+
     def draw_item(self):
         """
         Draws the circle after setting up the canvas with a call to
@@ -626,7 +690,7 @@ class PyDMDrawingCircle(PyDMDrawing):
         """
         super(PyDMDrawingCircle, self).draw_item()
         _, _, w, h = self.get_bounds()
-        r = min(w, h) / 2.0
+        r = self._calculate_radius(w, h)
         self._painter.drawEllipse(QPoint(0, 0), r, r)
 
 

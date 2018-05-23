@@ -7,7 +7,7 @@ from ...PyQt.QtCore import Qt
 from ...PyQt.QtGui import QColor
 from ...utilities import is_pydm_app
 from ...application import PyDMApplication
-from ...widgets.base import compose_stylesheet, is_channel_valid, PyDMWidget, PyDMWritableWidget
+from ...widgets.base import compose_stylesheet, is_channel_valid, PyDMWidget
 from ...widgets.label import PyDMLabel
 from ...widgets.pushbutton import PyDMPushButton
 from ...widgets.line_edit import PyDMLineEdit
@@ -353,6 +353,32 @@ def test_channels_for_tools(qtbot):
     assert all(x == y for x, y in zip(pydm_label.channels(), pydm_label.channels_for_tools()))
 
 
+def test_pydmwidget_channel_change(qtbot):
+    """
+    Test the channel property for changes and the effect on the channels() property.
+
+    Parameters
+    ----------
+    qtbot : fixture
+        Window for widget testing
+
+    """
+    pydm_label = PyDMLabel()
+    qtbot.addWidget(pydm_label)
+    assert pydm_label._channel is None
+    assert pydm_label._channels is None
+
+    pydm_label.channel = 'foo://bar'
+    assert pydm_label._channel == 'foo://bar'
+    assert pydm_label._channels is None
+    assert pydm_label.channels()[0].address == 'foo://bar'
+
+    pydm_label.channel = 'abc://def'
+    assert pydm_label._channel == 'abc://def'
+    assert pydm_label._channels is None
+    assert pydm_label.channels()[0].address == 'abc://def'
+
+
 def test_pydmwidget_channels(qtbot):
     """
     Test the channels population for the widget whose base class PyDMWidget
@@ -487,7 +513,7 @@ def test_pydmwritable_check_enable_state(qtbot, monkeypatch, channel_address, co
     pydm_lineedit._connected = connected
     pydm_lineedit._write_access = write_access
 
-    monkeypatch.setattr(PyDMApplication, 'is_read_only', lambda *args: (is_app_read_only))
+    monkeypatch.setattr(PyDMApplication, 'is_read_only', lambda *args: is_app_read_only)
 
     original_tooltip = "Original Tooltip"
     pydm_lineedit.setToolTip(original_tooltip)
