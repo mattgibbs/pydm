@@ -3,7 +3,7 @@ import functools
 
 import collections
 
-from ..PyQt.QtCore import QObject, QThread, QMutex, Signal
+from ..PyQt.QtCore import QObject, QThread, QMutex, Signal, QMutexLocker
 from ..PyQt.QtGui import QApplication
 
 from .channel import PyDMChannel
@@ -109,7 +109,6 @@ class RulesEngine(QThread):
         if widget in self.widget_map:
             self.unregister(widget, already_locked=True)
 
-
         self.widget_map[widget] = []
 
         for idx, rule in enumerate(rules):
@@ -155,12 +154,11 @@ class RulesEngine(QThread):
 
     def run(self):
         while not self.isInterruptionRequested():
-            self.map_lock.lock()
-            for widget in self.widget_map:
-                for rule in self.widget_map[widget]:
-                    if rule['calculate']:
-                        self.calculate_expression(widget, rule)
-            self.map_lock.unlock()
+            with QMutexLocker(self.map_lock):
+                for widget in self.widget_map:
+                    for rule in self.widget_map[widget]:
+                        if rule['calculate']:
+                            self.calculate_expression(widget, rule)
             self.msleep(33) # 30Hz
 
     def callback_value(self, widget, index, ch_index, trigger, value):
