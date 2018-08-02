@@ -1,11 +1,8 @@
 # Utility to handle importing the global stylesheet for PyDM widgets
 import os
 import logging
-
-from ..PyQt.QtGui import QApplication
-
+from qtpy.QtWidgets import QApplication
 logger = logging.getLogger(__name__)
-
 
 # Fallback global stylesheet if there is no global stylesheet provided via env
 # variable or command line parameter
@@ -18,7 +15,6 @@ GLOBAL_STYLESHEET = os.path.realpath(
 )
 
 __style_data = None
-
 
 def clear_cache():
     """Clear the cache for stylesheet data"""

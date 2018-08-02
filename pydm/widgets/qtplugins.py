@@ -1,6 +1,5 @@
 import logging
 logger = logging.getLogger(__name__)
-
 from .qtplugin_base import qtplugin_factory, WidgetCategory
 from .qtplugin_extensions import (RulesExtension, WaveformCurveEditorExtension,
                                   TimeCurveEditorExtension,

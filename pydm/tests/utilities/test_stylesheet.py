@@ -1,8 +1,7 @@
 import os
 import logging
-
+from qtpy.QtGui import QApplication
 from ...utilities import stylesheet
-from ...PyQt.QtGui import QLabel, QApplication
 
 # The path to the stylesheet used in these unit tests
 test_stylesheet_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test_data",
