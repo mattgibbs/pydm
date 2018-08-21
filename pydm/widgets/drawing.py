@@ -3,8 +3,9 @@ import os
 import logging
 
 from ..PyQt.QtGui import (QApplication, QWidget, QColor, QPainter, QBrush, QPen,
-                          QPolygon, QPixmap, QStyle, QStyleOption, QMovie)
-from ..PyQt.QtCore import pyqtProperty, Qt, QPoint, QSize, pyqtSlot
+                          QPolygon, QPolygonF, QPixmap, QStyle, QStyleOption,
+                          QMovie)
+from ..PyQt.QtCore import pyqtProperty, Qt, QPoint, QPointF, QSize, pyqtSlot
 from ..PyQt.QtDesigner import QDesignerFormWindowInterface
 from .base import PyDMWidget
 from ..utilities import is_pydm_app
@@ -48,6 +49,7 @@ def qt_to_deg(deg):
     # Angles for Qt are in units of 1/16 of a degree
     return deg / 16.0
 
+
 class PyDMDrawing(QWidget, PyDMWidget):
     """
     Base class to be used for all PyDM Drawing Widgets.
@@ -61,17 +63,19 @@ class PyDMDrawing(QWidget, PyDMWidget):
         The channel to be used by the widget.
     """
     def __init__(self, parent=None, init_channel=None):
-        QWidget.__init__(self, parent)
-        PyDMWidget.__init__(self, init_channel=init_channel)
-        self.alarmSensitiveBorder = False
         self._rotation = 0.0
         self._brush = QBrush(Qt.SolidPattern)
-        self._default_color = QColor()
+        self._original_brush = None
         self._painter = QPainter()
         self._pen = QPen(Qt.NoPen)
         self._pen_style = Qt.NoPen
         self._pen_width = 0
         self._pen_color = QColor(0, 0, 0)
+        self._original_pen_style = self._pen_style
+        self._original_pen_color = self._pen_color
+        QWidget.__init__(self, parent)
+        PyDMWidget.__init__(self, init_channel=init_channel)
+        self.alarmSensitiveBorder = False
 
     def sizeHint(self):
         return QSize(100, 100)
@@ -96,38 +100,11 @@ class PyDMDrawing(QWidget, PyDMWidget):
         self.style().drawPrimitive(QStyle.PE_Widget, opt, self._painter, self)
         self._painter.setRenderHint(QPainter.Antialiasing)
 
-        color = self._default_color
-        if self._alarm_sensitive_content and self._alarm_state != PyDMWidget.ALARM_NONE and self.channels() is not None:
-            alarm_color = self._style.get("color", None)
-            if alarm_color is not None:
-                color = QColor(alarm_color)
-
-        self._brush.setColor(color)
-
         self._painter.setBrush(self._brush)
         self._painter.setPen(self._pen)
 
         self.draw_item()
         self._painter.end()
-
-    def alarm_severity_changed(self, new_alarm_severity):
-        """
-        Callback invoked when the Channel alarm severity is changed.
-        This callback is not processed if the widget has no channel
-        associated with it.
-        This callback handles the composition of the stylesheet to be
-        applied and the call
-        to update to redraw the widget with the needed changes for the
-        new state.
-
-        Parameters
-        ----------
-        new_alarm_severity : int
-            The new severity where 0 = NO_ALARM, 1 = MINOR, 2 = MAJOR
-            and 3 = INVALID
-        """
-        PyDMWidget.alarm_severity_changed(self, new_alarm_severity)
-        self.update()
 
     def draw_item(self):
         """
@@ -285,8 +262,9 @@ class PyDMDrawing(QWidget, PyDMWidget):
         new_brush : QBrush
         """
         if new_brush != self._brush:
+            if self._alarm_state == PyDMWidget.ALARM_NONE:
+                self._original_brush = new_brush
             self._brush = new_brush
-            self._default_color = new_brush.color()
             self.update()
 
     @pyqtProperty(Qt.PenStyle)
@@ -311,6 +289,8 @@ class PyDMDrawing(QWidget, PyDMWidget):
         new_style : int
             Index at Qt.PenStyle enum
         """
+        if self._alarm_state == PyDMWidget.ALARM_NONE:
+            self._original_pen_style = new_style
         if new_style != self._pen_style:
             self._pen_style = new_style
             self._pen.setStyle(new_style)
@@ -336,6 +316,9 @@ class PyDMDrawing(QWidget, PyDMWidget):
         ----------
         new_color : QColor
         """
+        if self._alarm_state == PyDMWidget.ALARM_NONE:
+            self._original_pen_color = new_color
+
         if new_color != self._pen_color:
             self._pen_color = new_color
             self._pen.setColor(new_color)
@@ -394,6 +377,15 @@ class PyDMDrawing(QWidget, PyDMWidget):
             self._rotation = new_angle
             self.update()
 
+    def alarm_severity_changed(self, new_alarm_severity):
+        PyDMWidget.alarm_severity_changed(self, new_alarm_severity)
+        if new_alarm_severity == PyDMWidget.ALARM_NONE:
+            if self._original_brush is not None:
+                self.brush = self._original_brush
+            if self._original_pen_color is not None:
+                self.penColor = self._original_pen_color
+            if self._original_pen_style is not None:
+                self.penStyle = self._original_pen_style
 
 class PyDMDrawingLine(PyDMDrawing):
     """
@@ -878,3 +870,61 @@ class PyDMDrawingChord(PyDMDrawingArc):
         x, y, w, h = self.get_bounds(maxsize=maxsize)
         self._painter.drawChord(x, y, w, h, self._start_angle, self._span_angle)
 
+
+class PyDMDrawingPolygon(PyDMDrawing):
+    """
+    A widget with a polygon drawn in it.
+    This class inherits from PyDMDrawing.
+
+    Parameters
+    ----------
+    parent : QWidget
+        The parent widget for the Label
+    init_channel : str, optional
+        The channel to be used by the widget.
+    """
+    def __init__(self, parent=None, init_channel=None):
+        super(PyDMDrawingPolygon, self).__init__(parent, init_channel)
+        self._num_points = 3
+
+    @pyqtProperty(int)
+    def numberOfPoints(self):
+        """
+        PyQT Property for the number of points
+
+        Returns
+        -------
+        int
+            Number of Points
+        """
+        return self._num_points
+
+    @numberOfPoints.setter
+    def numberOfPoints(self, points):
+        if points >= 3 and points != self._num_points:
+            self._num_points = points
+            self.update()
+
+    def _calculate_drawing_points(self, x, y, w, h):
+        #(x + r*cos(theta), y + r*sin(theta))
+        r = min(w, h)/2.0
+        deg_step = 360.0/self._num_points
+
+        points = []
+        for i in range(self._num_points):
+            xp = r * math.cos(math.radians(deg_step * i))
+            yp = r * math.sin(math.radians(deg_step * i))
+            points.append(QPointF(xp, yp))
+
+        return points
+
+    def draw_item(self):
+        """
+        Draws the Polygon after setting up the canvas with a call to
+        ```PyDMDrawing.draw_item```.
+        """
+        super(PyDMDrawingPolygon, self).draw_item()
+        maxsize = not self.is_square()
+        x, y, w, h = self.get_bounds(maxsize=not self.is_square())
+        poly = self._calculate_drawing_points(x, y, w, h)
+        self._painter.drawPolygon(QPolygonF(poly))

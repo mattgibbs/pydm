@@ -1,8 +1,13 @@
+import json
+import logging
 from ..PyQt.QtGui import QApplication, QWidget, QPainter, QPixmap, QStyle, QStyleOption
 from ..PyQt.QtCore import pyqtProperty, Qt, QSize, QSizeF, QRectF, qInstallMessageHandler
 from ..PyQt.QtSvg import QSvgRenderer
-import json
+from ..utilities import is_pydm_app
 from .base import PyDMWidget
+
+logger = logging.getLogger(__name__)
+
 
 class PyDMSymbol(QWidget, PyDMWidget):
     """
@@ -18,7 +23,13 @@ class PyDMSymbol(QWidget, PyDMWidget):
     def __init__(self, parent=None, init_channel=None):
         QWidget.__init__(self, parent)
         PyDMWidget.__init__(self, init_channel=init_channel)
+        if 'Index' not in PyDMSymbol.RULE_PROPERTIES:
+            PyDMSymbol.RULE_PROPERTIES = PyDMWidget.RULE_PROPERTIES.copy()
+            PyDMSymbol.RULE_PROPERTIES.update(
+                {'Index': ['set_current_key', object]})
         self.app = QApplication.instance()
+        self._current_key = 0
+        self._state_images_string = ""
         self._state_images = {}  # Keyed on state values (ints), values are (filename, qpixmap or qsvgrenderer) tuples.
         self._aspect_ratio_mode = Qt.KeepAspectRatio
         self._sizeHint = self.minimumSizeHint()
@@ -30,6 +41,22 @@ class PyDMSymbol(QWidget, PyDMWidget):
         when using the widget with the Qt Designer
         """
         self.value = 0
+        self._current_key = 0
+
+    def set_current_key(self, current_key):
+        """
+        Change the image being displayed for the one given by `current_key`.
+
+        Parameters
+        ----------
+        current_key : object
+            The current_key parameter can be of any type as long as it matches
+            the type used as key for the imageFiles dictionary.
+
+        """
+        if self._current_key != current_key:
+            self._current_key = current_key
+            self.update()
 
     @pyqtProperty(str)
     def imageFiles(self):
@@ -41,6 +68,8 @@ class PyDMSymbol(QWidget, PyDMWidget):
         -------
         str
         """
+        if not self._state_images:
+            return self._state_images_string
         return json.dumps({str(state): val[0] for (state, val) in self._state_images.items()})
 
     @imageFiles.setter
@@ -53,13 +82,21 @@ class PyDMSymbol(QWidget, PyDMWidget):
         ----------
         new_files : str
         """
-        new_file_dict = json.loads(str(new_files))
+        self._state_images_string = str(new_files)
+        try:
+            new_file_dict = json.loads(self._state_images_string)
+        except Exception:
+            self._state_images = {}
+            return
         self._sizeHint = QSize(0, 0)
         for (state, filename) in new_file_dict.items():
-            try:
-                file_path = self.app.get_path(filename)
-            except Exception as e:
-                print(e)
+            if is_pydm_app():
+                try:
+                    file_path = self.app.get_path(filename)
+                except Exception as e:
+                    logger.exception("Couldn't get file with path %s", filename)
+                    file_path = filename
+            else:
                 file_path = filename
             # First, lets try SVG.  We have to try SVG first, otherwise
             # QPixmap will happily load the SVG and turn it into a raster image.
@@ -83,7 +120,7 @@ class PyDMSymbol(QWidget, PyDMWidget):
                 self._sizeHint = self._sizeHint.expandedTo(image.size())
                 continue
             # If we get this far, the file specified could not be loaded at all.
-            print("Could not load image: {}".format(filename))
+            logger.error("Could not load image: {}".format(filename))
             self._state_images[int(state)] = (filename, None)
 
     @pyqtProperty(Qt.AspectRatioMode)
@@ -134,6 +171,7 @@ class PyDMSymbol(QWidget, PyDMWidget):
             The new value from the channel.
         """
         super(PyDMSymbol, self).value_changed(new_val)
+        self._current_key = new_val
         self.update()
 
     def sizeHint(self):
@@ -174,7 +212,10 @@ class PyDMSymbol(QWidget, PyDMWidget):
         opt.initFrom(self)
         self.style().drawPrimitive(QStyle.PE_Widget, opt, self._painter, self)
         # self._painter.setRenderHint(QPainter.Antialiasing)
-        image_to_draw = self._state_images.get(self.value, (None, None))[1]
+        if self._current_key is None:
+            self._painter.end()
+            return
+        image_to_draw = self._state_images.get(self._current_key, (None, None))[1]
         if image_to_draw is None:
             self._painter.end()
             return

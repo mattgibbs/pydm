@@ -14,7 +14,8 @@ from ...widgets.drawing import (deg_to_qt, qt_to_deg, PyDMDrawing,
                                 PyDMDrawingRectangle, PyDMDrawingTriangle,
                                 PyDMDrawingEllipse,
                                 PyDMDrawingCircle, PyDMDrawingArc,
-                                PyDMDrawingPie, PyDMDrawingChord)
+                                PyDMDrawingPie, PyDMDrawingChord,
+                                PyDMDrawingPolygon)
 
 from ...utilities import is_pydm_app
 
@@ -94,7 +95,6 @@ def test_pydmdrawing_construct(qtbot):
     assert pydm_drawing.alarmSensitiveBorder is False
     assert pydm_drawing._rotation == 0.0
     assert pydm_drawing._brush.style() == Qt.SolidPattern
-    assert pydm_drawing._default_color
     assert pydm_drawing._painter
     assert pydm_drawing._pen.style() == pydm_drawing._pen_style == Qt.NoPen
     assert pydm_drawing._pen_width == 0
@@ -123,8 +123,7 @@ def test_pydmdrawing_sizeHint(qtbot):
     True,
     False,
 ])
-def test_pydmdrawing_paintEvent(qtbot, signals, test_alarm_style_sheet_map,
-                                alarm_sensitive_content):
+def test_pydmdrawing_paintEvent(qtbot, signals, alarm_sensitive_content):
     """
     Test the paintEvent handling of the widget. This test method will also execute PyDMDrawing alarm_severity_changed
     and draw_item().
@@ -138,10 +137,8 @@ def test_pydmdrawing_paintEvent(qtbot, signals, test_alarm_style_sheet_map,
         Window for widget testing
     signals : fixture
         The signals fixture, which provides access signals to be bound to the appropriate slots
-    test_alarm_style_sheet_map : fixture
-        The widget's style map, e.g. color, for different alarm severity levels
     alarm_sensitive_content : bool
-        True if the widget will be redraw with a different color if an alarm is triggered; False otherwise
+        True if the widget will be redraw with a different color if an alarm is triggered; False otherwise.
     """
     pydm_drawing = PyDMDrawing()
     qtbot.addWidget(pydm_drawing)
@@ -158,14 +155,6 @@ def test_pydmdrawing_paintEvent(qtbot, signals, test_alarm_style_sheet_map,
         return pydm_drawing.hasFocus()
 
     qtbot.waitUntil(wait_focus, timeout=5000)
-
-    alarm_color = test_alarm_style_sheet_map[PyDMWidget.ALARM_CONTENT][
-        pydm_drawing._alarm_state]
-
-    if alarm_sensitive_content:
-        assert pydm_drawing.brush.color() == QColor(alarm_color["color"])
-    else:
-        assert pydm_drawing.brush.color() == pydm_drawing._default_color
 
 
 @pytest.mark.parametrize("widget_width, widget_height, expected_results", [
@@ -479,8 +468,7 @@ def test_pydmdrawing_properties_and_setters(qtbot):
     True,
     False,
 ])
-def test_pydmdrawingline_draw_item(qtbot, signals, test_alarm_style_sheet_map,
-                                   alarm_sensitive_content):
+def test_pydmdrawingline_draw_item(qtbot, signals, alarm_sensitive_content):
     """
     Test PyDMDrawingLine base class drawing handling.
 
@@ -494,8 +482,6 @@ def test_pydmdrawingline_draw_item(qtbot, signals, test_alarm_style_sheet_map,
     signals : fixture
         To emit the alarm severity change signal in order to make an appearance change for the widget, thus triggering
         a redraw
-    test_alarm_style_sheet_map : fixture
-        The widget's style map, e.g. color, for different alarm severity levels
     alarm_sensitive_content : bool
         True if the widget will be redraw with a different color if an alarm is triggered; False otherwise
     """
@@ -514,14 +500,6 @@ def test_pydmdrawingline_draw_item(qtbot, signals, test_alarm_style_sheet_map,
         return pydm_drawingline.hasFocus()
 
     qtbot.waitUntil(wait_focus, timeout=5000)
-
-    alarm_color = test_alarm_style_sheet_map[PyDMWidget.ALARM_CONTENT][
-        pydm_drawingline._alarm_state]
-
-    if alarm_sensitive_content:
-        assert pydm_drawingline.brush.color() == QColor(alarm_color["color"])
-    else:
-        assert pydm_drawingline.brush.color() == pydm_drawingline._default_color
 
 
 # # -----------------
@@ -1112,6 +1090,55 @@ def test_pydmdrawingchord_draw_item(qtbot, monkeypatch, width, height,
 
     pydm_drawingchord.draw_item()
 
+# # ---------------------
+# # PyDMDrawingPolygon
+# # ---------------------
+@pytest.mark.parametrize("x, y, width, height, num_points, expected_points", [
+    (0, 0, 100, 100, 3, [(50.0, 0),(-25, 43.3012),(-25, -43.3012)]),
+    (0, 0, 100, 100, 4, [(50.0, 0), (0, 50.0), (-50.0, 0), (0, -50.0)])
+])
+def test_pydmdrawingpolygon_calculate_drawing_points(qtbot, x, y, width,
+                                                      height, num_points,
+                                                      expected_points):
+    """
+    Test the calculations of the point coordinates of a PyDMDrawingTriangle widget.
+
+    Expectations:
+    The calculations match with the expected values.
+
+    Parameters
+    ----------
+    qtbot : fixture
+        Window for widget testing
+    x : int, float
+        The x-coordinate
+    y: int, float
+        The y-coordinate
+    width : int, float
+        The base measurement
+    height : int, float
+        The height measurement
+    num_points : int
+        The number of points in the polygon
+    expected_points : tuple
+        The collection of the x and y coordinate sets
+    """
+    drawing = PyDMDrawingPolygon()
+    qtbot.addWidget(drawing)
+
+    drawing.numberOfPoints = num_points
+
+    assert drawing.numberOfPoints == num_points
+
+    calculated_points = drawing._calculate_drawing_points(x, y,
+                                                          width,
+                                                          height)
+
+    for idx, p in enumerate(calculated_points):
+        assert p.x() == pytest.approx(expected_points[idx][0], 0.1)
+        assert p.y() == pytest.approx(expected_points[idx][1], 0.1)
+
+    drawing.draw_item()
 
 # --------------------
 # NEGATIVE TEST CASES

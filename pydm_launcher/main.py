@@ -1,6 +1,6 @@
 import sys
 import argparse
-from pydm import PyDMApplication
+import pydm
 import json
 import logging
 
@@ -36,6 +36,11 @@ def main():
         help='Start PyDM with the status bar hidden.'
         )
     parser.add_argument(
+        '--fullscreen',
+        action='store_true',
+        help='Start PyDM in full screen mode.'
+        )
+    parser.add_argument(
         '--read-only',
         action='store_true',
         help='Start PyDM in a Read-Only mode.'
@@ -46,6 +51,8 @@ def main():
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         default='INFO'
         )
+    parser.add_argument('--version', action='version',
+                    version='PyDM {version}'.format(version=pydm.__version__))
     parser.add_argument(
         '-m', '--macro',
         help='Specify macro replacements to use, in JSON object format.' +
@@ -59,10 +66,18 @@ def main():
              '  Example: -m "sector = LI25, facility=LCLS"'
         )
     parser.add_argument(
+        '--stylesheet',
+        help='Provide the full path to the CSS stylesheet file, which must' +
+             ' contain the appearances (styles) to be applied to specific ' +
+             ' Qt/PyDM widget types.',
+        default=None
+        )
+    parser.add_argument(
         'display_args',
         help='Arguments to be passed to the PyDM client application' +
              ' (which is a QApplication subclass).',
-        nargs=argparse.REMAINDER
+        nargs=argparse.REMAINDER,
+        default=None
         )
 
     pydm_args = parser.parse_args()
@@ -87,15 +102,17 @@ def main():
         logger.setLevel(pydm_args.log_level)
         handler.setLevel(pydm_args.log_level)
 
-    app = PyDMApplication(
+    app = pydm.PyDMApplication(
         ui_file=pydm_args.displayfile,
         command_line_args=pydm_args.display_args,
         perfmon=pydm_args.perfmon,
         hide_nav_bar=pydm_args.hide_nav_bar,
         hide_menu_bar=pydm_args.hide_menu_bar,
         hide_status_bar=pydm_args.hide_status_bar,
+        fullscreen=pydm_args.fullscreen,
         read_only=pydm_args.read_only,
-        macros=macros
+        macros=macros,
+        stylesheet_path=pydm_args.stylesheet
         )
 
     sys.exit(app.exec_())

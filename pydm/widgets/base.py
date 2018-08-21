@@ -1,46 +1,19 @@
+import logging
 import functools
+import json
 import numpy as np
-from ..PyQt.QtGui import QApplication, QColor, QCursor, QMenu
+from ..PyQt.QtGui import QApplication, QColor, QCursor, QMenu, QGraphicsOpacityEffect
 from ..PyQt.QtCore import Qt, QEvent, pyqtSignal, pyqtSlot, pyqtProperty
 from .channel import PyDMChannel
 from ..utilities import is_pydm_app
+from .rules import RulesDispatcher
 
+try:
+    from json.decoder import JSONDecodeError
+except ImportError:
+    JSONDecodeError = ValueError
 
-def compose_stylesheet(style, base_class=None, obj=None):
-    """
-    Creates a stylesheet string for a base class from a dictionary.
-
-    Parameters
-    ----------
-    style : dict
-        A dictionary with key being the property and value being the
-        property value to compose the stylesheet
-    base_class : str, optional
-        The QT base class to apply this stylesheet. Default: "QWidget"
-    obj : object, optional
-        When base_class string is not informed and obj is used the class
-        name is extracted from the object and used to compose the
-        stylesheet
-
-    Returns
-    -------
-    style_str : str
-        The composed stylesheet with the proper base class.
-    """
-    widget_selector = ""
-    if base_class is None:
-        if obj is not None:
-            base_class = type(obj).__name__
-            if hasattr(obj, "objectName") and obj.objectName() != "":
-                widget_selector = "#" + obj.objectName()
-        else:
-            base_class = ""
-    style_str = base_class + widget_selector + " {"
-    for k, v in style.items():
-        style_str += "{}: {}; ".format(k, v)
-    style_str += "}"
-
-    return style_str
+logger = logging.getLogger(__name__)
 
 
 def is_channel_valid(channel):
@@ -82,7 +55,109 @@ class PyDMPrimitiveWidget(object):
     All Widget classes from PyDMWidget will be True for
     isinstance(obj, PyDMPrimitiveWidget)
     """
-    pass
+    DEFAULT_RULE_PROPERTY = "Visible"
+    RULE_PROPERTIES = {
+        'Enable': ['setEnabled', bool],
+        'Visible': ['setVisible', bool],
+        'Opacity': ['set_opacity', float]
+    }
+
+    def __init__(self):
+        self._rules = None
+        self._opacity = 1.0
+
+    def opacity(self):
+        """
+        Float value between 0 and 1 representing the opacity of the widget
+        where 0 means transparent.
+
+        Returns
+        -------
+        opacity : float
+        """
+        return self._opacity
+
+    def set_opacity(self, val):
+        """
+        Float value between 0 and 1 representing the opacity of the widget
+        where 0 means transparent.
+
+        Parameters
+        ----------
+        val : float
+            The new value for the opacity
+        """
+        op = QGraphicsOpacityEffect(self)
+        if val > 1:
+            val = 1
+        elif val < 0:
+            val = 0
+        self._opacity = val
+        op.setOpacity(val)  # 0 to 1 will cause the fade effect to kick in
+        self.setGraphicsEffect(op)
+        self.setAutoFillBackground(True)
+
+
+    @pyqtSlot(dict)
+    def rule_evaluated(self, payload):
+        """
+        Callback called when a rule has a new value for a property.
+
+        Parameters
+        ----------
+        payload : dict
+            Dictionary containing the rule name, the property to be set and the
+            new value.
+
+        Returns
+        -------
+        None
+        """
+        name = payload.get('name', '')
+        prop = payload.get('property', '')
+        value = payload.get('value', None)
+
+        if prop not in self.RULE_PROPERTIES:
+            logger.error('Error at Rule: %s. %s is not part of this widget properties.',
+                         name, prop)
+            return
+
+        method_name, data_type = self.RULE_PROPERTIES[prop]
+        method = getattr(self, method_name)
+        method(value)
+
+    @pyqtProperty(str, designable=False)
+    def rules(self):
+        """
+        JSON-formatted list of dictionaries, with rules for the widget.
+
+        Returns
+        -------
+        str
+        """
+        return self._rules
+
+    @rules.setter
+    def rules(self, new_rules):
+        """
+        JSON-formatted list of dictionaries, with rules for the widget.
+
+        Parameters
+        ----------
+        new_rules : str
+
+        Returns
+        -------
+        None
+        """
+        if new_rules != self._rules:
+            self._rules = new_rules
+            try:
+                rules_list = json.loads(self._rules)
+                RulesDispatcher().register(self, rules_list)
+            except JSONDecodeError as ex:
+                logger.exception('Invalid format for Rules')
+                return
 
 
 class PyDMWidget(PyDMPrimitiveWidget):
@@ -97,93 +172,31 @@ class PyDMWidget(PyDMPrimitiveWidget):
         The channel to be used by the widget.
 
     """
-
-    # Usually, this widget will get this from its parent pydm application.
-    # However, in Designer, the parent isnt a pydm application, and
-    # doesn't know what a color map is.
-    # The following two color maps are provided for that scenario.
-    local_alarm_severity_color_map = {
-        0: QColor(0, 0, 0),  # NO_ALARM
-        1: QColor(200, 200, 20),  # MINOR_ALARM
-        2: QColor(240, 0, 0),  # MAJOR_ALARM
-        3: QColor(240, 0, 240)  # INVALID_ALARM
-    }
-    local_connection_status_color_map = {
-        False: QColor(0, 0, 0),
-        True: QColor(0, 0, 0,)
-    }
-
-    NO_ALARM = 0x0 #Stylesheet for widgets which don't react to alarm status
-    ALARM_CONTENT = 0x1 #Stylesheet for the 'content' of widgets (text, usually).
-    ALARM_BORDER = 0x2 #Stylesheet for the border of widgets.
-    ALARM_INDICATOR = 0x4 #Stylesheet for 'indicator' ornaments, where you want the "OK" status to actually have a color.
-
+    # Alarm types
     ALARM_NONE = 0
     ALARM_MINOR = 1
     ALARM_MAJOR = 2
     ALARM_INVALID = 3
     ALARM_DISCONNECTED = 4
 
-    GREEN_ALARM = "#00EB00"
-    YELLOW_ALARM = "#EBEB00"
-    RED_ALARM = "#EB0000"
-    MAGENTA_ALARM = "#EB00EB"
-    WHITE_ALARM = "#EBEBEB"
-
-    # We put all this in a big dictionary to try to avoid constantly
-    # allocating and deallocating new stylesheet strings.
-    alarm_style_sheet_map = {
-        NO_ALARM: {
-            ALARM_NONE: {},
-            ALARM_MINOR: {},
-            ALARM_MAJOR: {},
-            ALARM_INVALID: {},
-            ALARM_DISCONNECTED: {}
-        },
-        ALARM_CONTENT: {
-            ALARM_NONE: {"color": "black"},
-            ALARM_MINOR: {"color": YELLOW_ALARM},
-            ALARM_MAJOR: {"color": RED_ALARM},
-            ALARM_INVALID: {"color": MAGENTA_ALARM},
-            ALARM_DISCONNECTED: {"color": WHITE_ALARM}
-        },
-        ALARM_INDICATOR: {
-            ALARM_NONE: {"color": GREEN_ALARM},
-            ALARM_MINOR: {"color": YELLOW_ALARM},
-            ALARM_MAJOR: {"color": RED_ALARM},
-            ALARM_INVALID: {"color": MAGENTA_ALARM},
-            ALARM_DISCONNECTED: {"color": WHITE_ALARM}
-        },
-        ALARM_BORDER: {
-            ALARM_NONE: {"border": "2px solid transparent"},
-            ALARM_MINOR: {"border": "2px solid " + YELLOW_ALARM},
-            ALARM_MAJOR: {"border": "2px solid " + RED_ALARM},
-            ALARM_INVALID: {"border": "2px solid " + MAGENTA_ALARM},
-            ALARM_DISCONNECTED: {"border": "2px solid " + WHITE_ALARM}
-        },
-        ALARM_CONTENT | ALARM_BORDER: {
-            ALARM_NONE: {"color": "black", "border": "2px solid transparent"},
-            ALARM_MINOR: {"color": YELLOW_ALARM, "border": "2px solid " + YELLOW_ALARM},
-            ALARM_MAJOR: {"color": RED_ALARM, "border": "2px solid " + RED_ALARM},
-            ALARM_INVALID: {"color": MAGENTA_ALARM, "border": "2px solid " + MAGENTA_ALARM},
-            ALARM_DISCONNECTED: {"color": WHITE_ALARM, "border": "2px solid " + WHITE_ALARM}
-        }
-    }
-
     def __init__(self, init_channel=None):
         super(PyDMWidget, self).__init__()
+
+        if not all([prop in PyDMPrimitiveWidget.RULE_PROPERTIES for prop in
+                    ['Position - X', 'Position - Y']]):
+            PyDMWidget.RULE_PROPERTIES = PyDMPrimitiveWidget.RULE_PROPERTIES.copy()
+            PyDMWidget.RULE_PROPERTIES.update(
+                {'Position - X': ['setX', int],
+                 'Position - Y': ['setY', int]})
+
         self.app = QApplication.instance()
         self._connected = True
-        self._color = self.local_connection_status_color_map[False]
         self._channel = init_channel
         self._channels = None
         self._show_units = False
         self._alarm_sensitive_content = False
         self._alarm_sensitive_border = True
-        self._alarm_flags = (self.ALARM_CONTENT * self._alarm_sensitive_content) | \
-                            (self.ALARM_BORDER * self._alarm_sensitive_border)
-        self._alarm_state = self.ALARM_DISCONNECTED
-        self._style = self.alarm_style_sheet_map[self._alarm_flags][self._alarm_state]
+        self._alarm_state = self.ALARM_NONE
         self._tooltip = None
 
         self._precision_from_pv = True
@@ -200,7 +213,8 @@ class PyDMWidget(PyDMPrimitiveWidget):
         self.channeltype = None
         self.subtype = None
 
-        # If this label is inside a PyDMApplication (not Designer) start it in the disconnected state.
+        # If this label is inside a PyDMApplication (not Designer) start it in '
+        # the disconnected state.
         if is_pydm_app():
             self._connected = False
             self.alarmSeverityChanged(self.ALARM_DISCONNECTED)
@@ -235,7 +249,8 @@ class PyDMWidget(PyDMPrimitiveWidget):
             menu = QMenu(parent=self)
 
         kwargs = {'channels': self.channels_for_tools(), 'sender': self}
-        self.app.assemble_tools_menu(menu, widget_only=True, **kwargs)
+        if hasattr(self.app, 'assemble_tools_menu'):
+            self.app.assemble_tools_menu(menu, widget_only=True, **kwargs)
         return menu
 
     def open_context_menu(self, ev):
@@ -272,6 +287,8 @@ class PyDMWidget(PyDMPrimitiveWidget):
         self.check_enable_state()
         if not connected:
             self.alarmSeverityChanged(self.ALARM_DISCONNECTED)
+        else:
+            self.alarmSeverityChanged(self.ALARM_NONE)
 
     def value_changed(self, new_val):
         """
@@ -296,6 +313,15 @@ class PyDMWidget(PyDMPrimitiveWidget):
 
         self.update_format_string()
 
+    @pyqtProperty(int, designable=False)
+    def alarmSeverity(self):
+        return self._alarm_state
+
+    @alarmSeverity.setter
+    def alarmSeverity(self, new_severity):
+        if self._alarm_state != new_severity:
+            self._alarm_state = new_severity
+
     def alarm_severity_changed(self, new_alarm_severity):
         """
         Callback invoked when the Channel alarm severity is changed.
@@ -313,10 +339,12 @@ class PyDMWidget(PyDMPrimitiveWidget):
             and 3 = INVALID
         """
         # 0 = NO_ALARM, 1 = MINOR, 2 = MAJOR, 3 = INVALID
-        self._alarm_state = new_alarm_severity
-        self._style = dict(self.alarm_style_sheet_map[self._alarm_flags][new_alarm_severity])
-        style = compose_stylesheet(style=self._style, obj=self)
-        self.setStyleSheet(style)
+        if not self._channel:
+            self._alarm_state = PyDMWidget.ALARM_NONE
+        else:
+            self._alarm_state = new_alarm_severity
+        self.style().unpolish(self)
+        self.style().polish(self)
         self.update()
 
     def enum_strings_changed(self, new_enum_strings):
@@ -498,6 +526,40 @@ class PyDMWidget(PyDMPrimitiveWidget):
         """
         self.update()
 
+    def setX(self, new_x):
+        """
+        Set the X position of the Widget on the screen.
+
+        Parameters
+        ----------
+        new_x : int
+            The new X position
+
+        Returns
+        -------
+        None
+        """
+        point = self.pos()
+        point.setX(new_x)
+        self.move(point)
+
+    def setY(self, new_y):
+        """
+        Set the Y position of the Widget on the screen.
+
+        Parameters
+        ----------
+        new_y : int
+            The new Y position
+
+        Returns
+        -------
+        None
+        """
+        point = self.pos()
+        point.setY(new_y)
+        self.move(point)
+
     @pyqtProperty(bool)
     def alarmSensitiveContent(self):
         """
@@ -525,9 +587,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
             alarm severity changes.
         """
         self._alarm_sensitive_content = checked
-        self._alarm_flags = (self.ALARM_CONTENT * self._alarm_sensitive_content) | (self.ALARM_BORDER * self._alarm_sensitive_border)
-        if is_pydm_app():
-            self.alarm_severity_changed(self._alarm_state)
+        self.alarm_severity_changed(self._alarm_state)
 
     @pyqtProperty(bool)
     def alarmSensitiveBorder(self):
@@ -555,9 +615,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
             alarm severity changes.
         """
         self._alarm_sensitive_border = checked
-        self._alarm_flags = (self.ALARM_CONTENT * self._alarm_sensitive_content) | (self.ALARM_BORDER * self._alarm_sensitive_border)
-        if is_pydm_app():
-            self.alarm_severity_changed(self._alarm_state)
+        self.alarm_severity_changed(self._alarm_state)
 
     @pyqtProperty(bool)
     def precisionFromPV(self):
@@ -685,7 +743,9 @@ class PyDMWidget(PyDMPrimitiveWidget):
         channel : str
             Channel address
         """
-        return str(self._channel)
+        if self._channel:
+            return str(self._channel)
+        return None
 
     @channel.setter
     def channel(self, value):
@@ -697,8 +757,12 @@ class PyDMWidget(PyDMPrimitiveWidget):
         value : str
             Channel address
         """
-        if self._channel != value:
-            self._channel = str(value)
+        if value:
+            if self._channel != value:
+                self._channel = str(value)
+                self._channels = None
+        else:
+            self._channel = None
             self._channels = None
 
     def update_format_string(self):
@@ -791,9 +855,6 @@ class PyDMWidget(PyDMPrimitiveWidget):
         list
         """
         return self.channels()
-
-    def qcolor_for_alarm(self, alarm, alarm_type=ALARM_CONTENT):
-        return QColor(self.alarm_style_sheet_map[alarm_type][alarm]["color"])
 
 
 class PyDMWritableWidget(PyDMWidget):

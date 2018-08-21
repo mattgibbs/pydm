@@ -1,15 +1,16 @@
 # Unit Tests for the base widget classes
 
 import pytest
-
+import json
+import logging
+logger = logging.getLogger(__name__)
 
 from ...PyQt.QtCore import Qt
-from ...PyQt.QtGui import QColor
+from ...PyQt.QtGui import QColor, QMenu, QMouseEvent
 from ...utilities import is_pydm_app
 from ...application import PyDMApplication
-from ...widgets.base import compose_stylesheet, is_channel_valid, PyDMWidget
+from ...widgets.base import is_channel_valid, PyDMWidget
 from ...widgets.label import PyDMLabel
-from ...widgets.pushbutton import PyDMPushButton
 from ...widgets.line_edit import PyDMLineEdit
 from ...widgets.channel import PyDMChannel
 
@@ -17,51 +18,6 @@ from ...widgets.channel import PyDMChannel
 # --------------------
 # POSITIVE TEST CASES
 # --------------------
-
-@pytest.mark.parametrize("base_class, obj_class_name, obj_name, expected_style", [
-    ("PyDMWritableWidget", PyDMPushButton, None, "PyDMWritableWidget {color: #EB0000; }"),
-    ("PyDMWidget", PyDMLabel, None, "PyDMWidget {color: #EB0000; }"),
-    ("PyDMWritableWidget", None, None, "PyDMWritableWidget {color: #EB0000; }"),
-    (None, PyDMPushButton, None, "PyDMPushButton {color: #EB0000; }"),
-    (None, PyDMPushButton, "PushButton", "PyDMPushButton#PushButton {color: #EB0000; }"),
-    (None, None, "PushButton", " {color: #EB0000; }"),
-])
-def test_compose_stylesheet(monkeypatch, test_alarm_style_sheet_map, base_class, obj_class_name, obj_name,
-                            expected_style):
-    """
-    Test the style generated for the widget based on an alarm event.
-
-    Expectations:
-    The style is generated correctly, taken into account the widget's base class, the widget's class, and the widget's
-    name.
-
-    Parameters
-    ----------
-    monkeypatch : fixture
-        To temporarily override the behavior of a class
-    test_alarm_style_sheet_map : fixture
-        The widget's style map depending on the alarm event
-    base_class : str
-        The base class name of the widget
-    obj_class_name : type
-        The object type of the widget -- used for creating a new widget object
-    obj_name : str
-        The name of a widget object
-    expected_style : str
-        The expected style for an alarm event corresponding to the widget
-    """
-    obj = None
-    if obj_class_name:
-        obj = obj_class_name()
-
-    if obj_name:
-        # Pretend that the push button can have an object name to test the object name concatenation to the style string
-        monkeypatch.setattr(PyDMPushButton, "objectName", lambda *args: obj_name)
-
-    style = dict(test_alarm_style_sheet_map[PyDMWidget.ALARM_CONTENT][PyDMWidget.ALARM_MAJOR])
-    style_name = compose_stylesheet(style, base_class=base_class, obj=obj)
-    assert style_name == expected_style
-
 
 @pytest.mark.parametrize("channel_address, expected", [
     ("CA://MA_TEST", True),
@@ -86,16 +42,17 @@ def test_is_channel_valid(channel_address, expected):
 
 
 test_local_connection_status_color_map = {
-        False: QColor(0, 0, 0),
-        True: QColor(0, 0, 0,)
+    False: QColor(0, 0, 0),
+    True: QColor(0, 0, 0, )
 }
+
 
 @pytest.mark.parametrize("init_channel", [
     "CA://MA_TEST",
     "",
     None,
 ])
-def test_pydm_widget_construct(qtbot, test_alarm_style_sheet_map, init_channel):
+def test_pydmwidget_construct(qtbot, init_channel):
     """
     Test the construction of the widget.
 
@@ -106,8 +63,6 @@ def test_pydm_widget_construct(qtbot, test_alarm_style_sheet_map, init_channel):
     ----------
     qtbot : fixture
         Window for widget testing
-    test_alarm_style_sheet_map : dict
-        The map containing the styles corresponding to alarm events
     init_channel : str
         The channel the widget is going to be initialized with
     """
@@ -117,16 +72,15 @@ def test_pydm_widget_construct(qtbot, test_alarm_style_sheet_map, init_channel):
 
     assert pydm_label.app is None if not is_pydm_app else not None
     assert pydm_label._connected is not is_pydm_app
-    assert pydm_label._color == test_local_connection_status_color_map[False]
     assert pydm_label._channel == init_channel
     assert pydm_label._channels is None
     assert pydm_label._show_units is False
     assert pydm_label._alarm_sensitive_content is False
     assert pydm_label.alarmSensitiveBorder is True
-    assert pydm_label._alarm_flags == (PyDMWidget.ALARM_CONTENT * pydm_label._alarm_sensitive_content) | (
-            PyDMWidget.ALARM_BORDER * pydm_label._alarm_sensitive_border)
-    assert pydm_label._alarm_state == PyDMWidget.ALARM_DISCONNECTED
-    assert pydm_label._style == test_alarm_style_sheet_map[pydm_label._alarm_flags][pydm_label._alarm_state]
+    if init_channel:
+        assert pydm_label._alarm_state == PyDMWidget.ALARM_DISCONNECTED
+    else:
+        assert pydm_label._alarm_state == PyDMWidget.ALARM_NONE
 
     if is_pydm_app and is_channel_valid(init_channel):
         assert pydm_label._tooltip == ""
@@ -149,6 +103,9 @@ def test_pydm_widget_construct(qtbot, test_alarm_style_sheet_map, init_channel):
 
     assert pydm_label.contextMenuPolicy() == Qt.DefaultContextMenu
     assert pydm_label.contextMenuEvent
+    assert pydm_label.rules is None
+
+    assert pydm_label.opacity() == 1.0
 
 
 @pytest.mark.parametrize("init_channel", [
@@ -156,7 +113,7 @@ def test_pydm_widget_construct(qtbot, test_alarm_style_sheet_map, init_channel):
     "",
     None,
 ])
-def test_widget_ctx_menu(qtbot, init_channel):
+def test_pydmwidget_widget_ctx_menu(qtbot, init_channel):
     """
     Test the initial context menu creation.
 
@@ -176,6 +133,58 @@ def test_widget_ctx_menu(qtbot, init_channel):
     assert pydm_label.widget_ctx_menu() is None
 
 
+def test_pydmwidget_generate_context_menu(qtbot):
+    """
+    Test the generation of the context menu.
+
+    Expectations:
+    The context menu is successfully generated.
+
+    Parameters
+    ----------
+    qtbot : fixture
+        Window for widget testing
+    """
+    pydm_label = PyDMLabel()
+    qtbot.addWidget(pydm_label)
+
+    menu = pydm_label.generate_context_menu()
+    assert menu
+
+
+def test_open_context_menu(qtbot, monkeypatch, caplog):
+    """
+    Test to ensure the context menu can be displayed when the open_context_menu() method is called.
+
+    Expectations:
+    Instead of displaying the context menu, monkeypatch exec()_ to just log the execution, and check to ensure the log
+    event is there.
+
+    Parameters
+    ----------
+    qtbot : fixture
+        Window for widget testing
+    monkeypatch : fixture
+        To override dialog behaviors
+    caplog : fixture
+        The fixture to capture log outputs
+    """
+    pydm_label = PyDMLabel()
+    qtbot.addWidget(pydm_label)
+
+    caplog.set_level(logging.INFO)
+
+    def mock_exec_(*args):
+        logger.info("Context Menu displayed.")
+
+    monkeypatch.setattr(QMenu, "exec_", mock_exec_)
+
+    mouse_event = QMouseEvent(QMouseEvent.MouseButtonRelease, pydm_label.rect().center(), Qt.RightButton,
+                              Qt.RightButton, Qt.ShiftModifier)
+    pydm_label.open_context_menu(mouse_event)
+    assert "Context Menu displayed." in caplog.text
+
+ 
 @pytest.mark.parametrize("init_channel", [
     "CA://MA_TEST",
     "",
@@ -201,6 +210,15 @@ def test_pydmwidget_init_for_designer(qtbot, init_channel):
     pydm_label._connected = False
     pydm_label.init_for_designer()
     assert pydm_label._connected is True
+
+
+def test_pydmwidget_alarm_severity_changed(qtbot):
+    pydm_label = PyDMLabel()
+    qtbot.addWidget(pydm_label)
+
+    assert pydm_label.alarmSeverity == PyDMWidget.ALARM_NONE
+    pydm_label.alarmSeverity = PyDMWidget.ALARM_MAJOR
+    assert pydm_label.alarmSeverity == PyDMWidget.ALARM_MAJOR
 
 
 @pytest.mark.parametrize("init_channel", [
@@ -247,7 +265,8 @@ def test_ctrl_limit_changed(qtbot, signals, which_limit, new_limit):
     qtbot : fixture
         pytest-qt window for widget test
     signals : fixture
-        The signals fixture, which provides access signals to be bound to the appropriate slots
+        The signals fixture, which provides access signals to be bound to the
+        appropriate slots
     which_limit : str
         "UPPER" if the new value is intended for the upper limit, "LOWER" for the lower limit
     new_limit : float
@@ -257,12 +276,14 @@ def test_ctrl_limit_changed(qtbot, signals, which_limit, new_limit):
     qtbot.addWidget(pydm_label)
 
     if which_limit == "UPPER":
-        signals.upper_ctrl_limit_signal[type(new_limit)].connect(pydm_label.upperCtrlLimitChanged)
+        signals.upper_ctrl_limit_signal[type(new_limit)].connect(
+            pydm_label.upperCtrlLimitChanged)
         signals.upper_ctrl_limit_signal[type(new_limit)].emit(new_limit)
 
         assert pydm_label.get_ctrl_limits()[1] == new_limit
     elif which_limit == "LOWER":
-        signals.lower_ctrl_limit_signal[type(new_limit)].connect(pydm_label.lowerCtrlLimitChanged)
+        signals.lower_ctrl_limit_signal[type(new_limit)].connect(
+            pydm_label.lowerCtrlLimitChanged)
         signals.lower_ctrl_limit_signal[type(new_limit)].emit(new_limit)
 
         assert pydm_label.get_ctrl_limits()[0] == new_limit
@@ -350,7 +371,8 @@ def test_channels_for_tools(qtbot):
     pydm_label = PyDMLabel()
     qtbot.addWidget(pydm_label)
 
-    assert all(x == y for x, y in zip(pydm_label.channels(), pydm_label.channels_for_tools()))
+    assert all(x == y for x, y in
+               zip(pydm_label.channels(), pydm_label.channels_for_tools()))
 
 
 def test_pydmwidget_channel_change(qtbot):
@@ -466,19 +488,21 @@ def test_pydmwritablewidget_channels(qtbot):
     assert pydm_lineedit.channels()[0] == new_channel
 
 
-@pytest.mark.parametrize("channel_address, connected, write_access, is_app_read_only", [
-    ("CA://MA_TEST", True, True, True),
-    ("CA://MA_TEST", True, False, True),
-    ("CA://MA_TEST", True, True, False),
-    ("CA://MA_TEST", True, False, False),
-    ("CA://MA_TEST", False, True, True),
-    ("CA://MA_TEST", False, False, True),
-    ("CA://MA_TEST", False, True, False),
-    ("CA://MA_TEST", False, False, False),
-    ("", False, False, False),
-    (None, False, False, False),
-])
-def test_pydmwritable_check_enable_state(qtbot, monkeypatch, channel_address, connected, write_access,
+@pytest.mark.parametrize(
+    "channel_address, connected, write_access, is_app_read_only", [
+        ("CA://MA_TEST", True, True, True),
+        ("CA://MA_TEST", True, False, True),
+        ("CA://MA_TEST", True, True, False),
+        ("CA://MA_TEST", True, False, False),
+        ("CA://MA_TEST", False, True, True),
+        ("CA://MA_TEST", False, False, True),
+        ("CA://MA_TEST", False, True, False),
+        ("CA://MA_TEST", False, False, False),
+        ("", False, False, False),
+        (None, False, False, False),
+    ])
+def test_pydmwritable_check_enable_state(qtbot, monkeypatch, channel_address,
+                                         connected, write_access,
                                          is_app_read_only):
     """
     Test the tooltip generated depending on the channel address validation, connection, write access, and whether the
@@ -513,7 +537,8 @@ def test_pydmwritable_check_enable_state(qtbot, monkeypatch, channel_address, co
     pydm_lineedit._connected = connected
     pydm_lineedit._write_access = write_access
 
-    monkeypatch.setattr(PyDMApplication, 'is_read_only', lambda *args: is_app_read_only)
+    monkeypatch.setattr(PyDMApplication, 'is_read_only',
+                        lambda *args: is_app_read_only)
 
     original_tooltip = "Original Tooltip"
     pydm_lineedit.setToolTip(original_tooltip)
@@ -532,45 +557,113 @@ def test_pydmwritable_check_enable_state(qtbot, monkeypatch, channel_address, co
         assert actual_tooltip == original_tooltip
 
 
-@pytest.mark.parametrize("alarm_type, alarm, expected_qcolor", [
-
-    (PyDMWidget.ALARM_CONTENT, PyDMWidget.ALARM_NONE, {"color": "black"}),
-    (PyDMWidget.ALARM_CONTENT, PyDMWidget.ALARM_MINOR, {"color": "#EBEB00"}),
-    (PyDMWidget.ALARM_CONTENT, PyDMWidget.ALARM_MAJOR, {"color": "#EB0000"}),
-    (PyDMWidget.ALARM_CONTENT, PyDMWidget.ALARM_INVALID, {"color": "#EB00EB"}),
-    (PyDMWidget.ALARM_CONTENT, PyDMWidget.ALARM_DISCONNECTED, {"color": "#EBEBEB"}),
-
-    (PyDMWidget.ALARM_CONTENT | PyDMWidget.ALARM_BORDER, PyDMWidget.ALARM_NONE,
-     {"color": "black", "border": "2px solid transparent"}),
-    (PyDMWidget.ALARM_CONTENT | PyDMWidget.ALARM_BORDER, PyDMWidget.ALARM_MINOR,
-     {"color": "#EBEB00", "border": "2px solid #EBEB00"}),
-    (PyDMWidget.ALARM_CONTENT | PyDMWidget.ALARM_BORDER, PyDMWidget.ALARM_MAJOR,
-     {"color": "#EB0000", "border": "2px solid #EB0000"}),
-    (PyDMWidget.ALARM_CONTENT | PyDMWidget.ALARM_BORDER, PyDMWidget.ALARM_INVALID,
-     {"color": "#EB00EB", "border": "2px solid #EB00EB"}),
-    (PyDMWidget.ALARM_CONTENT | PyDMWidget.ALARM_BORDER, PyDMWidget.ALARM_DISCONNECTED,
-     {"color": "#EBEBEB", "border": "2px solid #EBEBEB"}),
-])
-def test_qcolor_for_alarm(qtbot, alarm_type, alarm, expected_qcolor):
+def test_pydmwidget_setx_sety(qtbot):
     """
-    Test the QColor object generated for the widget based on an alarm context.
-
-    Expectations:
-    The QColor object will be correctly generated as expected.
+    Test the setX and setY method.
 
     Parameters
     ----------
     qtbot : fixture
         Window for widget testing
-    alarm_type : int
-        The alarm type, e.g. AlARM_CONTENT, ALARM_INDICATOR, ALARM_BORDER, ALARM_CONTENT | ALARM_BORDER, etc.
-    alarm : int
-        The alarm severity, e.g. ALARM_NONE, ALARM_MINOR, ALARM_MAJOR, ALARM_INVALID, ALARM_DISCONNECTED
-    expected_qcolor : QColor
-        The expected QColor to be generated
+
+    Returns
+    -------
+    None
     """
     pydm_label = PyDMLabel()
     qtbot.addWidget(pydm_label)
 
-    qcolor = pydm_label.qcolor_for_alarm(alarm, alarm_type)
-    assert qcolor == QColor(expected_qcolor["color"])
+    pydm_label.setX(456)
+    pydm_label.setY(123)
+    pos = pydm_label.pos()
+    assert pos.x() == 456
+    assert pos.y() == 123
+
+
+def test_pydmwidget_rules(qtbot, caplog):
+    """
+    Test the rules mechanism.
+
+    Parameters
+    ----------
+    qtbot : fixture
+        Window for widget testing
+    caplog : fixture
+        To capture the log messages
+    """
+    pydm_label = PyDMLabel()
+    qtbot.addWidget(pydm_label)
+
+    pydm_label.rules = "foo"
+    for record in caplog.records:
+        assert record.levelno == logging.ERROR
+    assert "Invalid format for Rules" in caplog.text
+
+    rules = [{'name': 'Rule #1', 'property': 'Enable',
+              'expression': 'ch[0] > 1',
+              'channels': [{'channel': 'foo://MTEST:Float', 'trigger': True}]}]
+
+    rules_json = json.dumps(rules)
+    pydm_label.rules = rules_json
+    assert pydm_label.rules == rules_json
+
+    rules[0]['name'] = 'Rule #2'
+    rules_json = json.dumps(rules)
+    pydm_label.rules = rules_json
+
+
+def test_pydmwidget_rule_evaluated(qtbot, caplog):
+    """
+    Test the rules mechanism.
+
+    Parameters
+    ----------
+    qtbot : fixture
+        Window for widget testing
+    caplog : fixture
+        To capture the log messages
+    """
+    widget = PyDMLineEdit()
+    qtbot.addWidget(widget)
+    widget.show()
+
+    payload = {
+        'name': 'Test Rule 1',
+        'property': 'Invalid Property',
+        'value': 'foo'
+    }
+
+    widget.rule_evaluated(payload)
+    for record in caplog.records:
+        assert record.levelno == logging.ERROR
+    assert "is not part of this widget properties" in caplog.text
+
+    payload = {
+        'name': 'Test Rule 1',
+        'property': 'Visible',
+        'value': False
+    }
+
+    assert widget.isVisible()
+    widget.rule_evaluated(payload)
+    assert not widget.isVisible()
+
+
+def test_pydmwidget_opacity(qtbot):
+    """
+    Test the opacity property.
+
+    Parameters
+    ----------
+    qtbot : fixture
+        Window for widget testing
+    """
+    widget = PyDMLabel()
+    qtbot.addWidget(widget)
+    assert widget.opacity() == 1.0
+    widget.set_opacity(0.1)
+    assert widget.opacity() == 0.1
+    widget.set_opacity(2.0)
+    assert widget.opacity() == 1
+    widget.set_opacity(-1)
+    assert widget.opacity() == 0

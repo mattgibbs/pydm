@@ -25,8 +25,11 @@ from .PyQt.QtGui import QApplication, QColor, QWidget, QToolTip, QClipboard, QAc
 from .PyQt import uic
 from .main_window import PyDMMainWindow
 from .tools import ExternalTool
-from .utilities import macro, which, path_info
+
+from .utilities import macro, which, path_info, find_display_in_path
+from .utilities.stylesheet import apply_stylesheet
 from . import data_plugins
+from .widgets.rules import RulesDispatcher
 
 logger = logging.getLogger(__name__)
 DEFAULT_PROTOCOL = os.getenv("PYDM_DEFAULT_PROTOCOL")
@@ -76,6 +79,8 @@ class PyDMApplication(QApplication):
     use_main_window : bool, optional
         If ui_file is note given, this parameter controls whether or not to
         create a PyDMMainWindow in the initialization (Default is True).
+    fullscreen : bool, optional
+        Whether or not to launch PyDM in a full screen mode.
     """
     # Instantiate our plugins.
     plugins = data_plugins.plugin_modules
@@ -98,7 +103,7 @@ class PyDMApplication(QApplication):
     def __init__(self, ui_file=None, command_line_args=[], display_args=[],
                  perfmon=False, hide_nav_bar=False, hide_menu_bar=False,
                  hide_status_bar=False, read_only=False, macros=None,
-                 use_main_window=True):
+                 use_main_window=True, stylesheet_path=None, fullscreen=False):
         super(PyDMApplication, self).__init__(command_line_args)
         # Enable High DPI display, if available.
         if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
@@ -119,9 +124,12 @@ class PyDMApplication(QApplication):
         self.hide_nav_bar = hide_nav_bar
         self.hide_menu_bar = hide_menu_bar
         self.hide_status_bar = hide_status_bar
+        self.fullscreen = fullscreen
         self.__read_only = read_only
+
         # Open a window if required.
         if ui_file is not None:
+            apply_stylesheet(stylesheet_path)
             self.make_main_window()
             self.make_window(ui_file, macros, command_line_args)
         elif use_main_window:
@@ -183,9 +191,9 @@ class PyDMApplication(QApplication):
             to pass in extra arguments.  It is probably rare that code you
             write needs to use this argument.
         """
-        path_and_args = shlex.split(str(ui_file))
-        filepath = path_and_args[0]
-        filepath_args = path_and_args[1:]
+        base_dir, fname, args = path_info(str(ui_file))
+        filepath = os.path.join(base_dir, fname)
+        filepath_args = args
         pydm_display_app_path = which("pydm")
 
         if pydm_display_app_path is None:
@@ -203,11 +211,15 @@ class PyDMApplication(QApplication):
             args.extend(["--hide-menu-bar"])
         if self.hide_status_bar:
             args.extend(["--hide-status-bar"])
+        if self.fullscreen:
+            args.extend(["--fullscreen"])
         if macros is not None:
             args.extend(["-m", json.dumps(macros)])
         args.append(filepath)
         args.extend(self.display_args)
         args.extend(filepath_args)
+        if command_line_args is not None:
+            args.extend(command_line_args)
         subprocess.Popen(args, shell=False)
 
     def new_window(self, ui_file, macros=None, command_line_args=None):
@@ -245,7 +257,11 @@ class PyDMApplication(QApplication):
                                      hide_status_bar=self.hide_status_bar)
 
         self.main_window = main_window
-        main_window.show()
+        if self.fullscreen:
+            main_window.enter_fullscreen()
+        else:
+            main_window.show()
+
         self.load_external_tools()
         # If we are launching a new window, we don't want it to sit right on top of an existing window.
         if len(self.windows) > 1:
@@ -392,7 +408,7 @@ class PyDMApplication(QApplication):
             to pass in extra arguments.  It is probably rare that code you
             write needs to use this argument.
         establish_connection : bool, optional
-            Whether or not we should call ``establish_widget_connections for this
+            Whether or not we should call `establish_widget_connections` for this
             new widget. Default is True.
 
         Returns
@@ -459,6 +475,11 @@ class PyDMApplication(QApplication):
         really only used by embedded displays.
         """
         full_path = self.get_path(ui_file)
+
+        if not os.path.exists(full_path):
+            new_fname = find_display_in_path(ui_file)
+            if new_fname is not None and new_fname != "":
+                full_path = new_fname
         return self.open_file(full_path, macros=macros,
                               command_line_args=command_line_args,
                               establish_connection=establish_connection)
@@ -477,18 +498,26 @@ class PyDMApplication(QApplication):
         """
         if channel.address is None or channel.address == "":
             return None
+        protocol = None
         match = re.match('.*://', channel.address)
         if match:
             protocol = match.group(0)[:-3]
         elif DEFAULT_PROTOCOL is not None:
             # If no protocol was specified, and the default protocol environment variable is specified, try to use that instead.
             protocol = DEFAULT_PROTOCOL
-        try:
-            plugin_to_use = self.plugins[str(protocol)]
-            return plugin_to_use
-        except KeyError:
-            print("Couldn't find plugin for protocol: {0}".format(match.group(0)[:-3]))
-        warnings.warn("Channel {addr} did not specify a valid protocol and no default protocol is defined.  This channel will receive no data.  To specify a default protocol, set the PYDM_DEFAULT_PROTOCOL environment variable.", RuntimeWarning, stacklevel=2)
+        if protocol:
+            try:
+                plugin_to_use = self.plugins[str(protocol)]
+                return plugin_to_use
+            except KeyError:
+                print("Couldn't find plugin for protocol: {0}".format(match.group(0)[:-3]))
+        #If you get this far, we didn't successfuly figure out what plugin to use for this channel.
+        logger.warning(
+            "Channel {addr} did not specify a valid protocol and no default "
+            "protocol is defined.  This channel will receive no data. To "
+            "specify a default protocol, set the PYDM_DEFAULT_PROTOCOL "
+            "environment variable.".format(addr=channel.address)
+        )
         return None
 
     def add_connection(self, channel):
@@ -535,9 +564,14 @@ class PyDMApplication(QApplication):
         # If the address has a protocol, and it is the default protocol, strip it out before putting it on the clipboard.
         m = re.match('(.+?):/{2,3}(.+?)$', addr)
         if m is not None and DEFAULT_PROTOCOL is not None and m.group(1) == DEFAULT_PROTOCOL:
-            QApplication.clipboard().setText(m.group(2), mode=QClipboard.Selection)
+            copy_text = m.group(2)
         else:
-            QApplication.clipboard().setText(addr, mode=QClipboard.Selection)
+            copy_text = addr
+
+        clipboard = QApplication.clipboard()
+        clipboard.setText(copy_text)
+        event = QEvent(QEvent.Clipboard)
+        self.sendEvent(clipboard, event)
 
     def establish_widget_connections(self, widget):
         """
@@ -562,6 +596,25 @@ class PyDMApplication(QApplication):
                     # which we use to display a tooltip with the address of the widget's first channel.
                     child_widget.installEventFilter(self)
             except NameError:
+                pass
+
+    def unregister_widget_rules(self, widget):
+        """
+        Given a widget to start from, traverse the tree of child widgets,
+        and try to unregister rules to any widgets.
+
+        Parameters
+        ----------
+        widget : QWidget
+        """
+        widgets = [widget]
+        widgets.extend(widget.findChildren(QWidget))
+        for child_widget in widgets:
+            try:
+                if hasattr(child_widget, 'rules'):
+                    if child_widget.rules:
+                        RulesDispatcher().unregister(child_widget)
+            except:
                 pass
 
     def close_widget_connections(self, widget):

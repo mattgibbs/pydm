@@ -2,7 +2,7 @@ import os
 from os import path
 from .PyQt.QtGui import QApplication, QMainWindow, QFileDialog, QWidget, QAction
 from .PyQt.QtCore import Qt, QTimer, pyqtSlot, QSize, QLibraryInfo
-from .utilities import IconFont
+from .utilities import IconFont, find_display_in_path
 from .pydm_ui import Ui_MainWindow
 from .display_module import Display
 from .connection_inspector import ConnectionInspector
@@ -46,6 +46,7 @@ class PyDMMainWindow(QMainWindow):
         self.ui.actionReload_Display.triggered.connect(self.reload_display)
         self.ui.actionIncrease_Font_Size.triggered.connect(self.increase_font_size)
         self.ui.actionDecrease_Font_Size.triggered.connect(self.decrease_font_size)
+        self.ui.actionEnter_Fullscreen.triggered.connect(self.enter_fullscreen)
         self.ui.actionShow_File_Path_in_Title_Bar.triggered.connect(self.toggle_file_path_in_title_bar)
         self.ui.actionShow_Navigation_Bar.triggered.connect(self.toggle_nav_bar)
         self.ui.actionShow_Menu_Bar.triggered.connect(self.toggle_menu_bar)
@@ -66,19 +67,20 @@ class PyDMMainWindow(QMainWindow):
             self.ui.actionShow_Menu_Bar.activate(QAction.Trigger)
         if hide_status_bar:
             self.toggle_status_bar(False)
+        #Try to find the designer binary.
+        self.ui.actionEdit_in_Designer.setEnabled(False)
         self.designer_path = None
-        designer_bin = QLibraryInfo.location(QLibraryInfo.BinariesPath)
-
-        if platform.system() == 'Darwin':
-            self.designer_path = os.path.join(designer_bin, 'Designer.app/Contents/MacOS/Designer')
-        elif platform.system() == 'Linux':
-            self.designer_path = os.path.join(designer_bin, 'designer')
-        else:
-            self.designer_path = os.path.join(designer_bin, 'designer.exe')
-
-        # Ensure that the file exists
-        if not os.path.isfile(self.designer_path):
-            self.designer_path = None
+        possible_designer_bin_paths = (QLibraryInfo.location(QLibraryInfo.BinariesPath), QLibraryInfo.location(QLibraryInfo.LibraryExecutablesPath))
+        for bin_path in possible_designer_bin_paths:
+            if platform.system() == 'Darwin':
+                designer_path = os.path.join(bin_path, 'Designer.app/Contents/MacOS/Designer')
+            elif platform.system() == 'Linux':
+                designer_path = os.path.join(bin_path, 'designer')
+            else:
+                designer_path = os.path.join(bin_path, 'designer.exe')
+            if os.path.isfile(designer_path):
+                self.designer_path = designer_path
+                break
 
     def set_display_widget(self, new_widget):
         if new_widget == self._display_widget:
@@ -98,9 +100,11 @@ class PyDMMainWindow(QMainWindow):
     def clear_display_widget(self):
         if self._display_widget is not None:
             self.setCentralWidget(QWidget())
+            self.app.unregister_widget_rules(self._display_widget)
             self.app.close_widget_connections(self._display_widget)
             self._display_widget.deleteLater()
             self._display_widget = None
+            self.ui.actionEdit_in_Designer.setEnabled(False)
 
     def join_to_current_file_path(self, ui_file):
         ui_file = str(ui_file)
@@ -113,7 +117,10 @@ class PyDMMainWindow(QMainWindow):
         filename = self.join_to_current_file_path(ui_file)
         try:
             if not os.path.exists(filename):
-                raise IOError("File {} not found".format(filename))
+                new_fname = find_display_in_path(ui_file)
+                if new_fname is None or new_fname == "":
+                    raise IOError("File {} not found".format(filename))
+                filename = new_fname
             self.open_abs_file(filename, macros, command_line_args)
         except (IOError, OSError, ValueError, ImportError) as e:
             error_msg = "Cannot open file: '{0}'. Reason: '{1}'.".format(filename, e)
@@ -142,12 +149,17 @@ class PyDMMainWindow(QMainWindow):
             editors.append("Text Editor")
         edit_in_text += ' and '.join(editors)
         self.ui.actionEdit_in_Designer.setText(edit_in_text)
+        if self.designer_path:
+            self.ui.actionEdit_in_Designer.setEnabled(True)
 
     def new_window(self, ui_file, macros=None, command_line_args=None):
         filename = self.join_to_current_file_path(ui_file)
         try:
             if not os.path.exists(filename):
-                raise IOError("File {} not found".format(filename))
+                new_fname = find_display_in_path(ui_file)
+                if new_fname is None or new_fname == "":
+                    raise IOError("File {} not found".format(filename))
+                filename = new_fname
             self.new_abs_window(filename, macros, command_line_args)
         except (IOError, OSError, ValueError, ImportError) as e:
             error_msg = "Cannot open file: '{0}'. Reason: '{1}'.".format(filename, e)
@@ -384,6 +396,13 @@ class PyDMMainWindow(QMainWindow):
         current_font.setPointSizeF(current_font.pointSizeF() / 1.1)
         QApplication.instance().setFont(current_font)
         QTimer.singleShot(0, self.resizeForNewDisplayWidget)
+
+    @pyqtSlot(bool)
+    def enter_fullscreen(self, checked=False):
+        if self.isFullScreen():
+            self.showNormal()
+        else:
+            self.showFullScreen()
 
     @pyqtSlot(bool)
     def show_connections(self, checked):
