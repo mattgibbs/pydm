@@ -1,6 +1,6 @@
 import os
 import logging
-from qtpy.QtGui import QApplication
+from qtpy.QtWidgets import QApplication
 from ...utilities import stylesheet
 
 # The path to the stylesheet used in these unit tests
