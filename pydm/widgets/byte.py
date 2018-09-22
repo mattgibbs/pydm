@@ -1,7 +1,9 @@
-from ..PyQt.QtGui import QWidget, QTabWidget, QColor, QPen, QGridLayout, QLabel, QFontMetrics, QPainter, QBrush, QStyleOption, QStyle
-from ..PyQt.QtCore import pyqtProperty, Qt, QSize, QPoint
+from qtpy.QtWidgets import QWidget, QTabWidget, QGridLayout, QLabel, QStyle, QStyleOption
+from qtpy.QtGui import QColor, QPen, QFontMetrics, QPainter, QBrush
+from qtpy.QtCore import Property, Qt, QSize, QPoint
 import numpy as np
 from .base import PyDMWidget
+
 
 class PyDMBitIndicator(QWidget):
     """
@@ -13,10 +15,10 @@ class PyDMBitIndicator(QWidget):
         The parent widget for the Label
 
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, circle=False):
         super(PyDMBitIndicator, self).__init__(parent)
         self.setAutoFillBackground(True)
-        self.circle = False
+        self.circle = circle
         self._painter = QPainter()
         self._brush = QBrush(Qt.SolidPattern)
         self._pen = QPen(Qt.SolidLine)
@@ -52,8 +54,8 @@ class PyDMBitIndicator(QWidget):
         """
         Property for the color to be used when drawing
 
-        Returns
-        -------
+        Parameters
+        ----------
         QColor
         """
         self._brush.setColor(color)
@@ -62,6 +64,7 @@ class PyDMBitIndicator(QWidget):
     def minimumSizeHint(self):
         fm = QFontMetrics(self.font())
         return QSize(fm.height(), fm.height())
+
 
 class PyDMByteIndicator(QWidget, PyDMWidget):
     """
@@ -192,20 +195,20 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         """
         Update the inner bit indicators accordingly with the new value.
         """
-        bits = np.unpackbits(np.array(self.value, dtype=np.uint8))
-        bits = np.roll(bits[::-1], -self._shift)
-        for i in range(0, self._num_bits):
-            w = self._indicators[i]
+        value = int(self.value) >> self._shift
+        if value < 0:
+            value = 0
+
+        bits = [(value >> i) & 1
+                for i in range(self._num_bits)]
+        for bit, indicator in zip(bits, self._indicators):
             if self._connected:
-                if bits[i] == 1:
-                    c = self._on_color
-                else:
-                    c = self._off_color
+                c = self._on_color if bit else self._off_color
             else:
                 c = self._disconnected_color
-            w.setColor(c)
+            indicator.setColor(c)
 
-    @pyqtProperty(QColor)
+    @Property(QColor)
     def onColor(self):
         """
         The color for a bit in the 'on' state.
@@ -229,7 +232,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
             self._on_color = new_color
             self.update_indicators()
 
-    @pyqtProperty(QColor)
+    @Property(QColor)
     def offColor(self):
         """
         The color for a bit in the 'off' state.
@@ -253,7 +256,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
             self._off_color = new_color
             self.update_indicators()
 
-    @pyqtProperty(Qt.Orientation)
+    @Property(Qt.Orientation)
     def orientation(self):
         """
         Whether to lay out the bit indicators vertically or horizontally.
@@ -293,7 +296,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
             self.layout().setHorizontalSpacing(label_spacing)
             self.layout().setVerticalSpacing(indicator_spacing)
 
-    @pyqtProperty(bool)
+    @Property(bool)
     def showLabels(self):
         """
         Whether or not to show labels next to each bit indicator.
@@ -309,7 +312,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         """
         Whether or not to show labels next to each bit indicator.
 
-        Returns
+        Parameters
         -------
         show : bool
             If True the widget will show a label next to the bit indicator
@@ -318,7 +321,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         for label in self._labels:
             label.setVisible(show)
 
-    @pyqtProperty(bool)
+    @Property(bool)
     def bigEndian(self):
         """
         Whether the most significant bit is at the start or end of the widget.
@@ -334,7 +337,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         """
         Whether the most significant bit is at the start or end of the widget.
 
-        Returns
+        Parameters
         -------
         is_big_endian : bool
             If True, the Big Endian will be used, Little Endian otherwise
@@ -346,7 +349,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
             self.layout().setOriginCorner(Qt.TopLeftCorner)
         self.rebuild_layout()
 
-    @pyqtProperty(bool)
+    @Property(bool)
     def circles(self):
         """
         Draw indicators as circles, rather than rectangles.
@@ -362,8 +365,8 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         """
         Draw indicators as circles, rather than rectangles.
 
-        Returns
-        -------
+        Parameters
+        ----------
         draw_circles : bool
             If True, bits will be represented as circles
         """
@@ -373,8 +376,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
             indicator.circle = self._circles
         self.update_indicators()
 
-
-    @pyqtProperty(QTabWidget.TabPosition)
+    @Property(QTabWidget.TabPosition)
     def labelPosition(self):
         """
         The side of the widget to display labels on.
@@ -397,7 +399,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         self._label_position = new_pos
         self.rebuild_layout()
 
-    @pyqtProperty(int)
+    @Property(int)
     def numBits(self):
         """
         Number of bits to interpret.
@@ -422,7 +424,8 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         self._num_bits = new_num_bits
         for indicator in self._indicators:
             indicator.deleteLater()
-        self._indicators = [PyDMBitIndicator(self) for i in range(0, self._num_bits)]
+        self._indicators = [PyDMBitIndicator(parent=self, circle=self.circles)
+                            for i in range(0, self._num_bits)]
         old_labels = self.labels
         new_labels = ["Bit {}".format(i) for i in range(0, self._num_bits)]
         for i, old_label in enumerate(old_labels):
@@ -431,7 +434,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
             new_labels[i] = old_label
         self.labels = new_labels
 
-    @pyqtProperty(int)
+    @Property(int)
     def shift(self):
         """
         Bit shift.
@@ -454,7 +457,7 @@ class PyDMByteIndicator(QWidget, PyDMWidget):
         self._shift = new_shift
         self.update_indicators()
 
-    @pyqtProperty('QStringList')
+    @Property('QStringList')
     def labels(self):
         """
         Labels for each bit.

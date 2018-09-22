@@ -1,5 +1,5 @@
-import tempfile
-import os
+import io
+import six
 from string import Template
 
 
@@ -15,12 +15,22 @@ def substitute_in_file(file_path, macros):
         Dictionary containing macro name as key and value as what will be substituted.
     Returns
     -------
-    temp_filename : str
-        The path to the new generated file with the proper substitutions.
+    file : io.StringIO
+        File-like object with the proper substitutions.
     """
-    temporary_fd, temp_filename = tempfile.mkstemp()
     with open(file_path) as orig_file:
-        with os.fdopen(temporary_fd, 'w') as temporary_file:
-            t = Template(orig_file.read())
-            temporary_file.write(t.safe_substitute(macros))
-    return temp_filename
+        text = Template(orig_file.read())
+    expanded_text = text.safe_substitute(macros)
+    return io.StringIO(six.text_type(expanded_text))
+
+
+def find_base_macros(widget):
+    '''
+    Find and return the first set of defined base_macros from this widget or
+    its ancestors.
+    '''
+    while widget is not None:
+        if hasattr(widget, 'base_macros'):
+            return widget.base_macros
+        widget = widget.parent()
+    return {}

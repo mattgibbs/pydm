@@ -1,11 +1,13 @@
-from ..PyQt.QtGui import QPushButton, QCursor, QMenu, QAction, QIcon
-from ..PyQt.QtCore import pyqtSlot, pyqtProperty, Qt, QSize, QPoint
+from qtpy.QtWidgets import QPushButton, QMenu, QAction
+from qtpy.QtGui import QCursor, QIcon
+from qtpy.QtCore import Slot, Property, Qt, QSize, QPoint
 import os
 import json
 import logging
 from functools import partial
 from .base import PyDMPrimitiveWidget
 from ..utilities import IconFont
+from ..utilities.macro import find_base_macros
 
 
 class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
@@ -22,8 +24,8 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
         The file to be opened
     """
     # Constants for determining where to open the display.
-    EXISTING_WINDOW = 0;
-    NEW_WINDOW = 1;
+    EXISTING_WINDOW = 0
+    NEW_WINDOW = 1
 
     def __init__(self, parent=None, filename=None):
         QPushButton.__init__(self, parent)
@@ -46,7 +48,7 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
         self.open_in_new_window_action.triggered.connect(partial(self.open_display, self.NEW_WINDOW))
         self._show_icon = True
 
-    @pyqtProperty(bool)
+    @Property(bool)
     def showIcon(self):
         """
         Whether or not we should show the selected Icon.
@@ -82,7 +84,7 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
         """
         self.setEnabled(True)
 
-    @pyqtProperty(str)
+    @Property(str)
     def displayFilename(self):
         """
         The filename to open
@@ -107,7 +109,7 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
             if self._display_filename is None or len(self._display_filename) < 1:
                 self.setEnabled(False)
 
-    @pyqtProperty(str)
+    @Property(str)
     def macros(self):
         """
         The macro substitutions to use when launching the display, in JSON object format.
@@ -134,7 +136,7 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
         else:
             self._macro_string = new_macros
 
-    @pyqtProperty(bool)
+    @Property(bool)
     def openInNewWindow(self):
         """
         If true, the button will open the display in a new window, rather than in the existing window.
@@ -184,7 +186,7 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
         finally:
             super(PyDMRelatedDisplayButton, self).mouseReleaseEvent(mouse_event)
 
-    @pyqtSlot()
+    @Slot()
     def open_display(self, target=EXISTING_WINDOW):
         """
         Open the configured `filename` with the given `target`.
@@ -199,14 +201,19 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
         # Check for None and ""
         if not self.displayFilename:
             return
-        macros = None
+        macros = {}
         if self._macro_string is not None:
             macros = json.loads(str(self._macro_string))
 
+        base_macros = find_base_macros(self)
+        merged_macros = base_macros.copy()
+        merged_macros.update(macros)
+
         if target == self.EXISTING_WINDOW:
-            self.window().go(self.displayFilename, macros=macros)
+            self.window().go(self.displayFilename, macros=merged_macros)
         if target == self.NEW_WINDOW:
-            self.window().new_window(self.displayFilename, macros=macros)
+            self.window().new_window(self.displayFilename,
+                                     macros=merged_macros)
 
     def context_menu(self):
         try:
@@ -218,7 +225,7 @@ class PyDMRelatedDisplayButton(QPushButton, PyDMPrimitiveWidget):
         menu.addAction(self.open_in_new_window_action)
         return menu
 
-    @pyqtSlot(QPoint)
+    @Slot(QPoint)
     def show_context_menu(self, pos):
         menu = self.context_menu()
         menu.exec_(self.mapToGlobal(pos))
