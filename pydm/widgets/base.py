@@ -1,3 +1,4 @@
+import weakref
 import logging
 import functools
 import json
@@ -8,7 +9,7 @@ from qtpy.QtCore import Qt, QEvent, Signal, Slot, Property
 from .channel import PyDMChannel
 from .. import data_plugins
 from .. import tools
-from ..utilities import is_pydm_app, remove_protocol
+from ..utilities import is_qt_designer, remove_protocol
 from .rules import RulesDispatcher
 
 try:
@@ -61,16 +62,16 @@ def widget_destroyed(channels, widget):
     ----------
     channels : list
         A list of PyDMChannel objects that this widget uses.
-    widget : QWidget
-        The widget. Which is pretty useless at this point.
+    widget : weakref
+        Weakref to the widget.
     """
     chs = channels()
-    if not chs:
-        return
+    if chs:
+        for ch in chs:
+            if ch:
+                ch.disconnect(destroying=True)
 
-    for ch in chs:
-        if ch:
-            ch.disconnect()
+    RulesDispatcher().unregister(widget)
 
 
 class PyDMPrimitiveWidget(object):
@@ -241,12 +242,17 @@ class PyDMWidget(PyDMPrimitiveWidget):
         self.setContextMenuPolicy(Qt.DefaultContextMenu)
         self.contextMenuEvent = self.open_context_menu
         self.channel = init_channel
-        if is_pydm_app():
+        if not is_qt_designer():
+            # We should  install the Event Filter only if we are running
+            # and not at the Designer
+            self.installEventFilter(self)
             self._connected = False
             self.alarmSeverityChanged(self.ALARM_DISCONNECTED)
             self.check_enable_state()
 
-        self.destroyed.connect(functools.partial(widget_destroyed, self.channels))
+        self.destroyed.connect(
+            functools.partial(widget_destroyed, self.channels, weakref.ref(self))
+        )
 
     def widget_ctx_menu(self):
         """
@@ -433,7 +439,8 @@ class PyDMWidget(PyDMPrimitiveWidget):
         """
         if self._unit != new_unit:
             self._unit = new_unit
-            self.update_format_string()
+            if self.value is not None:
+                self.value_changed(self.value)
 
     def precision_changed(self, new_precision):
         """
@@ -446,9 +453,10 @@ class PyDMWidget(PyDMPrimitiveWidget):
         new_precison : int or float
             The new precision value
         """
-        if self._precision_from_pv:
+        if self._precision_from_pv and new_precision != self._prec:
             self._prec = new_precision
-            self.update_format_string()
+            if self.value is not None:
+                self.value_changed(self.value)
 
     def ctrl_limit_changed(self, which, new_limit):
         """
@@ -753,7 +761,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
             return
         if new_prec and self._prec != int(new_prec) and new_prec >= 0:
             self._prec = int(new_prec)
-            self.update_format_string()
+            self.value_changed(self.value)
 
     @Property(bool)
     def showUnits(self):
@@ -824,16 +832,16 @@ class PyDMWidget(PyDMPrimitiveWidget):
             # Load new channel
             self._channel = str(value)
             channel = PyDMChannel(address=self._channel,
-                          connection_slot=self.connectionStateChanged,
-                          value_slot=self.channelValueChanged,
-                          severity_slot=self.alarmSeverityChanged,
-                          enum_strings_slot=self.enumStringsChanged,
-                          unit_slot=self.unitChanged,
-                          prec_slot=self.precisionChanged,
-                          upper_ctrl_limit_slot=self.upperCtrlLimitChanged,
-                          lower_ctrl_limit_slot=self.lowerCtrlLimitChanged,
-                          value_signal=None,
-                          write_access_slot=None)
+                                  connection_slot=self.connectionStateChanged,
+                                  value_slot=self.channelValueChanged,
+                                  severity_slot=self.alarmSeverityChanged,
+                                  enum_strings_slot=self.enumStringsChanged,
+                                  unit_slot=self.unitChanged,
+                                  prec_slot=self.precisionChanged,
+                                  upper_ctrl_limit_slot=self.upperCtrlLimitChanged,
+                                  lower_ctrl_limit_slot=self.lowerCtrlLimitChanged,
+                                  value_signal=None,
+                                  write_access_slot=None)
             # Load writeable channels if our widget requires them. These should
             # not exist on the base PyDMWidget but prevents us from duplicating
             # the method below to only make two more connections
@@ -894,7 +902,7 @@ class PyDMWidget(PyDMPrimitiveWidget):
         (lower, upper) : tuple
             Lower and Upper control limits
         """
-        return (self._lower_ctrl_limit, self._upper_ctrl_limit)
+        return self._lower_ctrl_limit, self._upper_ctrl_limit
 
     def channels(self):
         """
@@ -949,11 +957,6 @@ class PyDMWritableWidget(PyDMWidget):
     def __init__(self, init_channel=None):
         self._write_access = False
         super(PyDMWritableWidget, self).__init__(init_channel=init_channel)
-        self.app = QApplication.instance()
-        # We should  install the Event Filter only if we are running
-        # and not at the Designer
-        if is_pydm_app():
-            self.installEventFilter(self)
 
     def init_for_designer(self):
         """
@@ -985,14 +988,12 @@ class PyDMWritableWidget(PyDMWidget):
             status = self._write_access and self._connected
 
             if event.type() == QEvent.Leave:
-                # QApplication.setOverrideCursor(QCursor(Qt.ArrowCursor))
                 QApplication.restoreOverrideCursor()
 
             if event.type() == QEvent.Enter and not status:
                 QApplication.setOverrideCursor(QCursor(Qt.ForbiddenCursor))
 
         return PyDMWidget.eventFilter(self, obj, event)
-
 
     def write_access_changed(self, new_write_access):
         """
