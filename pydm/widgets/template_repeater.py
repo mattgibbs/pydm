@@ -138,6 +138,7 @@ class PyDMTemplateRepeater(QFrame, PyDMPrimitiveWidget, LayoutType):
     """
     Q_ENUMS(LayoutType)
     LayoutType = LayoutType
+    template_cache = {}
     def __init__(self, parent=None):
         QFrame.__init__(self, parent)
         PyDMPrimitiveWidget.__init__(self)
@@ -303,7 +304,9 @@ class PyDMTemplateRepeater(QFrame, PyDMPrimitiveWidget, LayoutType):
         fname = os.path.expanduser(os.path.expandvars(self.templateFilename))
         if is_pydm_app():
             if not self._cached_template:
-                self._cached_template = self.app.open_template(fname)
+                if fname not in self.template_cache:
+                    self.template_cache[fname] = self.app.open_template(fname)
+                self._cached_template = self.template_cache[fname]                    
             return self.app.widget_from_template(self._cached_template, variables)
         else:
             try:
