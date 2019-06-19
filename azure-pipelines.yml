@@ -23,6 +23,14 @@
 #        It deploy the package to the DEV or TAG channels at Anaconda Cloud.
 ############################################################################################
 
+trigger:
+  branches:
+    include:
+    - '*' # Build for all branches if they have a azure-pipelines.yml file.
+  tags:
+    include:
+    - 'v*' # Ensure that we are building for tags starting with 'v' (Official Versions)
+
 # Build only for PRs for master branch
 pr:
   autoCancel: true
@@ -70,6 +78,7 @@ jobs:
     condition: |
       and
       (
+        succeeded(),
         eq(dependencies.DeployControl.outputs['var.build_ok'], true),
         or
         (
@@ -99,13 +108,12 @@ jobs:
 
     - bash: |
         git config --global user.name "Azure Pipelines"
-        git config --global user.email "azurebot@nonvalidemail.com"
         git checkout gh-pages
         cp -r $(Build.Repository.LocalPath)/artifacts/docs_html/* .
         rm -rf $(Build.Repository.LocalPath)/artifacts
         git add *
-        git commit -m "Updating Docs with latest build - ***NO_CI***"
-        git push origin gh-pages
+        git commit -m "Updating Docs with latest build"
+        git push https://$(GITHUB_DOCS_PAT)@github.com/$(Build.Repository.Name).git gh-pages
       displayName: Documentation - Upload
 
   - job: 'Publish_PyPI'
@@ -113,6 +121,7 @@ jobs:
     condition: |
       and
       (
+        succeeded(),
         eq(dependencies.DeployControl.outputs['var.build_ok'], true),
         contains(variables['Build.SourceBranch'],'refs/tags')
       )
@@ -157,16 +166,16 @@ jobs:
       displayName: Artifact Download - PyPI Package
 
     - bash: |
-        twine upload --config-file $(PYPIRC_PATH) $(Build.Repository.LocalPath)/artifacts/dist/
+        twine upload --config-file $(PYPIRC_PATH) $(Build.Repository.LocalPath)/artifacts/dist/*
       condition: contains(variables['Build.SourceBranch'], 'tags')
       displayName: PyPI - Upload
-
 
   - job: 'Publish_Anaconda'
     displayName: Publish - Anaconda
     condition: |
       and
       (
+        succeeded(),
         eq(dependencies.DeployControl.outputs['var.build_ok'], true),
         or
         (

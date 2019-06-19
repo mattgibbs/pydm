@@ -7,10 +7,15 @@ from os import path, environ
 
 cur_dir = path.abspath(path.dirname(__file__))
 
-with open(path.join(cur_dir, 'requirements.txt')) as f:
+with open(path.join(cur_dir, 'requirements.txt'), 'r') as f:
     requirements = f.read().split()
 
-with open(path.join(cur_dir, 'README.md'), encoding='utf-8') as f:
+dev_requirements = []
+
+with open(path.join(cur_dir, 'dev-requirements.txt'), 'r') as f:
+    dev_requirements = f.read().split()
+
+with open(path.join(cur_dir, 'README.md'), 'r', encoding='utf-8') as f:
     long_description = f.read()
 
 # Remove the 'optional' requirements
@@ -23,7 +28,7 @@ extras_require = {
     'PySide': ['PySide'],
     'pyepics': ['pyepics'],
     'perf': ['psutil'],
-    'test': ['codecov', 'pytest', 'pytest-cov', 'coverage', 'coveralls']
+    'dev': dev_requirements
 }
 
 if "CONDA_PREFIX" not in environ:
