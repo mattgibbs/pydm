@@ -269,10 +269,8 @@ class PyDMSlider(QFrame, TextFormatter, PyDMWritableWidget):
             The new value from the channel.
         """
         logger.debug("Slider got a new value = %f", float(new_val))
-        PyDMWritableWidget.value_changed(self, new_val)
-        if hasattr(self, "value_label"):
-            logger.debug("Setting text for value label.")
-            self.value_label.setText(self.format_string.format(self.value))
+        super(PyDMSlider, self).value_changed(new_val)
+        self.update_labels()
         if not self._slider.isSliderDown():
             self.set_slider_to_closest_value(self.value)
 
@@ -292,21 +290,6 @@ class PyDMSlider(QFrame, TextFormatter, PyDMWritableWidget):
         PyDMWritableWidget.ctrl_limit_changed(self, which, new_limit)
         if not self.userDefinedLimits:
             self.reset_slider_limits()
-
-    def update_format_string(self):
-        """
-        Reconstruct the format string to be used when representing the
-        output value.
-
-        Returns
-        -------
-        format_string : str
-            The format string to be used including or not the precision
-            and unit
-        """
-        fs = super(PyDMSlider, self).update_format_string()
-        self.update_labels()
-        return fs
 
     def set_enable_state(self):
         """
